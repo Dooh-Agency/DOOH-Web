@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-dooh-dark text-dooh-white antialiased;
+  }
+
+  /* Scrollbar premium */
+  ::-webkit-scrollbar        { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track  { background: transparent; }
+  ::-webkit-scrollbar-thumb  { background: #ffffff22; border-radius: 999px; }
+  ::-webkit-scrollbar-thumb:hover { background: #ddf81d66; }
+}
+
+@layer utilities {
+  /* Section label — línea extensible */
+  .section-line {
+    @apply flex-1 h-px bg-white/10;
+  }
+
+  /* Carousel drag cursor */
+  .cursor-grab  { cursor: grab;    }
+  .cursor-grabbing { cursor: grabbing; }
+}
