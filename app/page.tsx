@@ -272,7 +272,7 @@ export default function Home() {
             Entra deslizándose desde la derecha mientras se dibuja.    */}
         <div
           id="svc-iso-right"
-          className="absolute top-[3%] right-[-6%] w-[38vw] max-w-[420px] pointer-events-none select-none"
+          className="absolute top-[3%] right-[-2%] sm:right-[-6%] w-[62vw] sm:w-[38vw] max-w-[420px] pointer-events-none select-none"
           aria-hidden="true"
           style={{ opacity: 0 }}
         >
@@ -292,7 +292,7 @@ export default function Home() {
             Entra deslizándose desde la izquierda mientras se dibuja.  */}
         <div
           id="svc-iso-left"
-          className="absolute bottom-[4%] left-[-6%] w-[38vw] max-w-[420px] pointer-events-none select-none"
+          className="absolute bottom-[4%] left-[-2%] sm:left-[-6%] w-[62vw] sm:w-[38vw] max-w-[420px] pointer-events-none select-none"
           aria-hidden="true"
           style={{ opacity: 0 }}
         >
@@ -550,13 +550,13 @@ export default function Home() {
           {/* 1 · Trama — blanca, 5% opacidad. Se mueve con el mouse. */}
           <div
             id="proceso-trama"
-            className="absolute w-[110%] h-[110%]"
+            className="absolute -left-[5%] w-[110%]
+                       -top-[30%] h-[160%]
+                       sm:-top-[5%] sm:h-[110%]
+                       [background-size:auto_100%] sm:[background-size:100%_auto]"
             style={{
-              top              : '-5%',
-              left             : '-5%',
               backgroundImage  : 'url(/trama-gde.svg)',
               backgroundRepeat : 'no-repeat',
-              backgroundSize   : '100% auto',
               backgroundPosition: 'center center',
               opacity          : 0.05,
             }}
@@ -902,7 +902,7 @@ export default function Home() {
 
           </div>
 
-          <div className="pt-6 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="pt-6 border-t border-white/[0.06] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <Logo className="h-3.5 w-auto text-dooh-white/40" />
             <p className="text-xs text-dooh-gray-mid/30">© 2026 DOOH Agency. Todos los derechos reservados.</p>
           </div>
