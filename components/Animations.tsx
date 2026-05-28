@@ -318,16 +318,143 @@ export function Animations() {
 
 
       /* ══════════════════════════════════════════════════════════
-         04 · PROYECTOS — carousel cards
-         Todas visibles en el viewport: stagger de 80ms c/u.
-         Combinan Y + scale para que cada tarjeta "aterrice".
+         03 · SERVICIOS — lógica de slideshow por panel
+         Definida primero porque activateTab la necesita.
+         Cada panel lleva su índice en dataset.slide.
+         GSAP anima la traslación X del track.
+         ══════════════════════════════════════════════════════════ */
+      const SLIDE_COUNT = 3
+
+      const goToSlide = (panel: HTMLElement, idx: number) => {
+        const track = panel.querySelector<HTMLElement>('.slideshow-track')
+        const dots  = panel.querySelectorAll<HTMLElement>('.dot')
+        if (!track) return
+        gsap.to(track, { x: `-${idx * 100}%`, duration: 0.42, ease: 'power2.inOut' })
+        dots.forEach((dot, i) => {
+          dot.classList.toggle('bg-dooh-lime', i === idx)
+          dot.classList.toggle('scale-125',    i === idx)
+          dot.classList.toggle('bg-white/30',  i !== idx)
+        })
+        panel.dataset.slide = String(idx)
+      }
+
+      const resetSlideshow = (panel: HTMLElement) => goToSlide(panel, 0)
+
+      const tabPanels = document.querySelectorAll<HTMLElement>('#servicios [role="tabpanel"]')
+
+      tabPanels.forEach(panel => {
+        panel.dataset.slide = '0'
+        panel.querySelector('.slide-next')?.addEventListener('click', () => {
+          const cur = parseInt(panel.dataset.slide ?? '0', 10)
+          goToSlide(panel, (cur + 1) % SLIDE_COUNT)
+        })
+        panel.querySelector('.slide-prev')?.addEventListener('click', () => {
+          const cur = parseInt(panel.dataset.slide ?? '0', 10)
+          goToSlide(panel, (cur - 1 + SLIDE_COUNT) % SLIDE_COUNT)
+        })
+        panel.querySelectorAll<HTMLElement>('.dot').forEach((dot, i) => {
+          dot.addEventListener('click', () => goToSlide(panel, i))
+        })
+      })
+
+
+      /* ══════════════════════════════════════════════════════════
+         03 · SERVICIOS — lógica de tabs
+         Al hacer clic en un tab:
+           1. Oculta todos los panels, muestra el seleccionado
+           2. Actualiza estilos activo/inactivo del botón
+           3. Resetea el slideshow del panel recién activado
+         ══════════════════════════════════════════════════════════ */
+      const tabBtns = document.querySelectorAll<HTMLElement>('#servicios [role="tab"]')
+
+      const activateTab = (targetId: string) => {
+        tabPanels.forEach(panel => {
+          panel.classList.toggle('hidden', panel.id !== `tab-${targetId}`)
+        })
+        tabBtns.forEach(btn => {
+          const isActive = btn.dataset.tab === targetId
+          btn.setAttribute('aria-selected', String(isActive))
+          if (isActive) {
+            btn.classList.add('bg-dooh-lime', 'text-dooh-dark')
+            btn.classList.remove('border', 'border-white/20', 'text-dooh-gray-mid', 'hover:border-white/40', 'hover:text-dooh-white')
+          } else {
+            btn.classList.remove('bg-dooh-lime', 'text-dooh-dark')
+            btn.classList.add('border', 'border-white/20', 'text-dooh-gray-mid', 'hover:border-white/40', 'hover:text-dooh-white')
+          }
+        })
+        const activePanel = document.getElementById(`tab-${targetId}`)
+        if (activePanel) resetSlideshow(activePanel)
+      }
+
+      tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.tab
+          if (id) activateTab(id)
+        })
+      })
+
+
+      /* ══════════════════════════════════════════════════════════
+         04 · PROYECTOS — despliegue horizontal izquierda → derecha
+         Cada tarjeta entra desde la izquierda, una tras otra.
+         x: -90 → posición inicial levemente desplazada.
+         stagger from: 'start' = orden natural izq → der.
+         amount: 0.65 = ~108ms entre cada card (6 tarjetas).
          ══════════════════════════════════════════════════════════ */
       gsap.from('#proyectos .portfolio-track article', {
         scrollTrigger: ST('#proyectos', '68%'),
-        y: 55, opacity: 0, scale: 0.94,
-        duration: D.card, ease: E.card,
-        stagger: { amount: 0.55, from: 'start' },
+        x: -90, opacity: 0,
+        duration: 0.72, ease: 'power3.out',
+        stagger: { amount: 0.65, from: 'start' },
       })
+
+
+
+      /* ══════════════════════════════════════════════════════════
+         05 · PROCESO — trama de fondo + foco de luz
+
+         La trama se revela con scroll: pasa de invisible a
+         0.07 de opacidad mientras la sección entra al viewport.
+         El foco (blob radial blanco) tiene dos movimientos:
+           · Scrub con scroll: se desplaza en Y siguiendo al usuario
+           · Deriva continua: oscilación lenta en X+Y sin fin
+         Ambos son muy sutiles para no distraer del contenido.
+         ══════════════════════════════════════════════════════════ */
+      /* ══════════════════════════════════════════════════════════
+         05 · PROCESO — parallax de trama con mouse
+         El velo queda fijo: su hueco radial es una "ventana"
+         permanente centrada en la sección.
+         La trama se desplaza suavemente según la posición del
+         mouse, haciendo que distintas partes asomen por el hueco.
+
+         Técnica: en cada mousemove calculamos cuánto se aleja
+         el cursor del centro del viewport (-1 a +1 en cada eje)
+         y lo convertimos en px con un factor de intensidad bajo.
+         GSAP interpola con power2.out para que el movimiento
+         sea orgánico, no mecánico.
+         ══════════════════════════════════════════════════════════ */
+      const tramaEl = document.querySelector<HTMLElement>('#proceso-trama')
+
+      if (tramaEl) {
+        const INTENSITY_X = 25   // px máximos de desplazamiento horizontal
+        const INTENSITY_Y = 20   // px máximos de desplazamiento vertical
+
+        const onMouseMove = (e: MouseEvent) => {
+          /* ratio normalizado: -1 (izquierda/arriba) → +1 (derecha/abajo) */
+          const rx = (e.clientX / window.innerWidth  - 0.5) * 2
+          const ry = (e.clientY / window.innerHeight - 0.5) * 2
+
+          gsap.to(tramaEl, {
+            x        : rx * INTENSITY_X,
+            y        : ry * INTENSITY_Y,
+            duration : 1.4,
+            ease     : 'power2.out',
+            overwrite: 'auto',
+          })
+        }
+
+        window.addEventListener('mousemove', onMouseMove, { passive: true })
+      }
 
 
       /* ══════════════════════════════════════════════════════════

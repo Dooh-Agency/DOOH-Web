@@ -191,7 +191,7 @@ export default function Home() {
           </div>
 
           <h2 className="text-[clamp(1.8rem,4vw,3.5rem)] font-bold tracking-tightest leading-tight text-dooh-white max-w-3xl mb-10">
-            Diseño con criterio. Tecnología con alma.{' '}
+            Diseño con criterio.{' '}
             <span id="paint-text" className="font-normal" style={{ color: 'inherit' }}>
               <span className="word-paint">Resultados</span>{' '}
               <span className="word-paint">con</span>{' '}
@@ -346,21 +346,21 @@ export default function Home() {
           {/* Tab panels */}
           {[
             {
-              id: "s1",
+              id: "s1", folder: "branding",
               claim: "La identidad visual que hace que te reconozcan antes de hablar.",
               title: "Branding & Identidad de Marca",
               desc: "Desarrollamos marcas con carácter: desde el naming y la arquitectura de marca hasta el sistema visual completo. Trabajamos junto al cliente para que cada decisión de diseño refleje quiénes son y hacia dónde van.",
               tags: ["Naming", "Identidad visual", "Posicionamiento", "Manual de marca", "Aplicaciones"],
             },
             {
-              id: "s2",
+              id: "s2", folder: "web",
               claim: "Un sitio que convierte porque fue pensado para convertir.",
               title: "Diseño Web & UX/UI",
               desc: "Diseñamos interfaces digitales orientadas a la experiencia del usuario y la conversión. Cada pantalla tiene una función estratégica: capturar atención, generar confianza y llevar al visitante a la acción que el negocio necesita.",
               tags: ["Diseño UX/UI", "Wix / Webflow", "Landing pages", "Integración digital"],
             },
             {
-              id: "s3",
+              id: "s3", folder: "contenido",
               claim: "Una comunicación que trabaja con la misma constancia que tu negocio.",
               title: "Contenido & Comunicación con IA",
               desc: "Combinamos estrategia de contenido, producción creativa y automatización inteligente para que la presencia digital de tu marca sea consistente, relevante y escalable. La IA nos permite entregar más, con mayor precisión y sin perder la voz propia del cliente.",
@@ -395,8 +395,13 @@ export default function Home() {
               <div className="service-slideshow relative aspect-square rounded-2xl bg-white/[0.04] border border-white/[0.08] overflow-hidden">
                 <div className="slideshow-track flex h-full">
                   {[1, 2, 3].map(n => (
-                    <div key={n} className="slide flex-shrink-0 w-full h-full flex items-center justify-center">
-                      <span className="text-white/[0.06] text-8xl font-bold">{n}</span>
+                    <div key={n} className="slide flex-shrink-0 w-full h-full">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={`/servicios/${panel.folder}/${n}.jpg`}
+                        alt={`${panel.title} — imagen ${n}`}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                   ))}
                 </div>
@@ -457,17 +462,17 @@ export default function Home() {
         {/* Carousel */}
         <div
           id="portfolio-carousel"
-          className="overflow-x-auto cursor-grab select-none pb-4"
+          className="overflow-x-auto cursor-grab select-none pb-8"
           style={{ scrollbarWidth: "none" }}
         >
           <div className="portfolio-track flex gap-2 px-8 md:px-14" style={{ width: "max-content" }}>
             {[
-              { name: "MUUD",           cat: "Branding · Packaging",           bg: "#2b1f14", color: "#f7f7f7" },
-              { name: "Meralba",        cat: "Identidad · Web aspiracional",    bg: "#0d2416", color: "#f7f7f7" },
-              { name: "RVD.AI",         cat: "Web · Contenido con IA",          bg: "#0a0a1a", color: "#ddf81d" },
-              { name: "Edumaia",        cat: "Web educativa · Lead generation", bg: "#1a0f00", color: "#f7f7f7" },
-              { name: "KANSO",          cat: "Identidad gastronómica · Vajilla", bg: "#111111", color: "#f7f7f7" },
-              { name: "Trust Transfer", cat: "Comunicación institucional",       bg: "#0a1628", color: "#f7f7f7" },
+              { name: "MUUD",           img: "/proyectos/muud.jpg",           cat: "Branding · Packaging",            bg: "#2b1f14", color: "#f7f7f7" },
+              { name: "Meralba",        img: "/proyectos/meralba.png",        cat: "Identidad · Web aspiracional",     bg: "#0d2416", color: "#f7f7f7" },
+              { name: "RVD.AI",         img: "/proyectos/rvd.jpg",            cat: "Web · Contenido con IA",           bg: "#0a0a1a", color: "#ddf81d" },
+              { name: "Edumaia",        img: "/proyectos/edumaia.jpg",        cat: "Web educativa · Lead generation",  bg: "#1a0f00", color: "#f7f7f7" },
+              { name: "KANSO",          img: "/proyectos/kanso.png",          cat: "Identidad gastronómica · Vajilla",  bg: "#111111", color: "#f7f7f7" },
+              { name: "Trust Transfer", img: "/proyectos/trust-transfer.png", cat: "Comunicación institucional",        bg: "#0a1628", color: "#f7f7f7" },
             ].map((card) => (
               <article
                 key={card.name}
@@ -481,8 +486,11 @@ export default function Home() {
                   "--card-color": card.color,
                 }}
               >
-                {/* Imagen background (añadir en fase 2) */}
-                <div className="portfolio-img-overlay absolute inset-0 bg-cover bg-center" />
+                {/* Imagen de fondo */}
+                <div
+                  className="portfolio-img-overlay absolute inset-0 bg-cover bg-center"
+                  style={{ backgroundImage: `url(${card.img})` }}
+                />
 
                 {/* Overlay color en hover */}
                 <div
@@ -523,12 +531,56 @@ export default function Home() {
         id="proceso"
         data-scroll-section
         className="
+          relative overflow-hidden
           min-h-screen flex flex-col justify-center
           bg-dooh-dark
           py-24 px-8 md:px-14
         "
       >
-        <div className="max-w-screen-xl mx-auto w-full">
+        {/* ── Trama + velo de luz ───────────────────────────────────────
+            Stack de capas:
+            1. Trama SVG (isotipos blancos, opacity baja pero presente)
+            2. Velo oscuro con un hueco radial en el centro — tapa la trama
+               casi completamente. Solo donde está el hueco se ve la trama.
+            3. El velo se desplaza de arriba a abajo con el scroll:
+               el hueco entra por la parte superior de la sección,
+               barre hasta abajo y sale. La trama nunca se ve completa. */}
+        <div className="absolute inset-0 pointer-events-none select-none overflow-hidden" aria-hidden="true">
+
+          {/* 1 · Trama — blanca, 5% opacidad. Se mueve con el mouse. */}
+          <div
+            id="proceso-trama"
+            className="absolute w-[110%] h-[110%]"
+            style={{
+              top              : '-5%',
+              left             : '-5%',
+              backgroundImage  : 'url(/trama-gde.svg)',
+              backgroundRepeat : 'no-repeat',
+              backgroundSize   : '100% auto',
+              backgroundPosition: 'center center',
+              opacity          : 0.05,
+            }}
+          />
+
+          {/* 2 · Velo oscuro fijo con hueco radial centrado — ventana permanente */}
+          <div
+            id="proceso-velo"
+            className="absolute inset-0"
+            style={{
+              background: [
+                'radial-gradient(ellipse 68% 52% at 50% 50%,',
+                '  transparent 0%,',
+                '  rgba(5,5,7,0.60) 38%,',
+                '  rgba(5,5,7,0.93) 58%,',
+                '  rgba(5,5,7,0.99) 75%',
+                ')',
+              ].join(' '),
+            }}
+          />
+
+        </div>
+
+        <div className="max-w-screen-xl mx-auto w-full relative z-10">
 
           <div className="section-label flex items-center gap-3 mb-6">
             <span className="text-dooh-lime text-xs font-semibold tracking-widest uppercase">05</span>
@@ -800,7 +852,7 @@ export default function Home() {
           <div className="flex flex-col md:flex-row items-start justify-between gap-10 mb-10">
 
             {/* Logo + tagline */}
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 items-start">
               <Logo className="h-4 w-auto text-dooh-white" />
               <p className="text-dooh-gray-mid/60 text-xs max-w-[18rem] leading-relaxed font-light">
                 Diseño con criterio. Tecnología con alma. Resultados con intención.
@@ -850,9 +902,9 @@ export default function Home() {
 
           </div>
 
-          <div className="pt-6 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-dooh-gray-mid/30">
-            <p>© 2026 DOOH Agency. Todos los derechos reservados.</p>
-            <p>Diseño con criterio. Tecnología con alma.</p>
+          <div className="pt-6 border-t border-white/[0.06] flex flex-col sm:flex-row items-center justify-between gap-4">
+            <Logo className="h-3.5 w-auto text-dooh-white/40" />
+            <p className="text-xs text-dooh-gray-mid/30">© 2026 DOOH Agency. Todos los derechos reservados.</p>
           </div>
 
         </div>
