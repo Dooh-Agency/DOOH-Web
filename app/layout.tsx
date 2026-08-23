@@ -12,12 +12,12 @@ const nunitoSans = Nunito_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "DOOH Agency — Publicidad Exterior Premium",
+  title: "DOOH Agency — Creative Tech Studio | Buenos Aires & Málaga",
   description:
-    "Agencia especializada en DOOH. Diseño, producción y gestión de campañas en pantallas digitales de alto impacto.",
+    "Agencia creativa que combina diseño, estrategia e inteligencia artificial para construir marcas con propósito.",
   openGraph: {
     title: "DOOH Agency",
-    description: "Publicidad exterior premium en pantallas digitales.",
+    description: "Diseño, estrategia e inteligencia artificial para marcas con propósito.",
     locale: "es_AR",
     type: "website",
   },

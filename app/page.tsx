@@ -1,4 +1,5 @@
 import { Logo } from "@/components/Logo";
+import { ProjectGallery } from "@/components/ProjectGallery";
 
 /* ================================================================
    DOOH Agency — page.tsx  v2
@@ -8,8 +9,8 @@ import { Logo } from "@/components/Logo";
 /* ── Microfrase separadora ────────────────────────────────────── */
 function Microfrase({ text }: { text: string }) {
   return (
-    <div className="bg-dooh-dark py-10 px-8 md:px-14 flex items-center justify-center">
-      <p className="text-dooh-gray-mid/50 text-sm italic text-center tracking-wide max-w-2xl">
+    <div className="bg-dooh-white border-y border-dooh-dark/10 py-10 px-8 md:px-14 flex items-center justify-center">
+      <p className="text-dooh-dark/55 text-sm italic text-center tracking-wide max-w-2xl">
         {text}
       </p>
     </div>
@@ -178,7 +179,7 @@ export default function Home() {
         data-scroll-section
         className="
           min-h-screen flex flex-col justify-center
-          bg-dooh-dark-mid
+          bg-dooh-white
           py-24 px-8 md:px-14
         "
       >
@@ -186,11 +187,11 @@ export default function Home() {
 
           <div className="section-label flex items-center gap-3 mb-16">
             <span className="text-dooh-lime text-xs font-semibold tracking-widest uppercase">02</span>
-            <span className="text-dooh-gray-mid text-xs tracking-widest uppercase">Posicionamiento</span>
-            <span className="section-line" />
+            <span className="text-dooh-dark/45 text-xs tracking-widest uppercase">Posicionamiento</span>
+            <span className="section-line bg-dooh-dark/10" />
           </div>
 
-          <h2 className="text-[clamp(1.8rem,4vw,3.5rem)] font-bold tracking-tightest leading-tight text-dooh-white max-w-3xl mb-10">
+          <h2 className="text-[clamp(1.8rem,4vw,3.5rem)] font-bold tracking-tightest leading-tight text-dooh-dark max-w-3xl mb-10">
             Diseño con criterio.{' '}
             <span id="paint-text" className="font-normal" style={{ color: 'inherit' }}>
               <span className="word-paint">Resultados</span>{' '}
@@ -199,10 +200,10 @@ export default function Home() {
             </span>
           </h2>
 
-          <p className="anim-body text-dooh-gray-mid font-light leading-relaxed max-w-2xl mb-6">
+          <p className="anim-body text-dooh-dark/65 font-light leading-relaxed max-w-2xl mb-6">
             En DOOH combinamos pensamiento estratégico, sensibilidad creativa e inteligencia artificial en un solo proceso integrado. Trabajamos junto al cliente desde el primer diagnóstico hasta la implementación final, entendiendo sus objetivos, su mercado y lo que su marca necesita comunicar para crecer.
           </p>
-          <p className="anim-body text-dooh-gray-mid font-light leading-relaxed max-w-2xl mb-16">
+          <p className="anim-body text-dooh-dark/65 font-light leading-relaxed max-w-2xl mb-16">
             Somos una agencia que piensa como estudio creativo y actúa como partner estratégico.
           </p>
 
@@ -226,8 +227,8 @@ export default function Home() {
                 key={p.tag}
                 data-pillar-card
                 className="
-                  group bg-dooh-dark-mid p-10 flex flex-col gap-4
-                  rounded-[20px] border border-white/[0.07]
+                  group bg-dooh-dark p-10 flex flex-col gap-4
+                  rounded-[20px] border border-dooh-dark
                 "
               >
                 <span
@@ -245,7 +246,7 @@ export default function Home() {
           </div>
 
           {/* Microfrase de cierre */}
-          <p className="mt-12 text-dooh-gray-mid/50 text-sm italic text-center tracking-wide">
+          <p className="mt-12 text-dooh-dark/45 text-sm italic text-center tracking-wide">
             Pensamos en sistemas. Diseñamos con alma.
           </p>
 
@@ -262,7 +263,7 @@ export default function Home() {
         className="
           relative overflow-hidden
           min-h-screen flex flex-col justify-center
-          bg-dooh-dark
+          bg-dooh-white
           py-24 px-8 md:px-14
         "
       >
@@ -311,14 +312,14 @@ export default function Home() {
 
           <div className="section-label flex items-center gap-3 mb-6">
             <span className="text-dooh-lime text-xs font-semibold tracking-widest uppercase">03</span>
-            <span className="text-dooh-gray-mid text-xs tracking-widest uppercase">Servicios</span>
-            <span className="section-line" />
+            <span className="text-dooh-dark/45 text-xs tracking-widest uppercase">Servicios</span>
+            <span className="section-line bg-dooh-dark/10" />
           </div>
 
-          <h2 className="text-[clamp(1.8rem,4vw,3.5rem)] font-bold tracking-tightest leading-tight text-dooh-white max-w-3xl mb-4">
+          <h2 className="text-[clamp(1.8rem,4vw,3.5rem)] font-bold tracking-tightest leading-tight text-dooh-dark max-w-3xl mb-4">
             Soluciones concretas para marcas que quieren crecer con identidad.
           </h2>
-          <p className="text-dooh-gray-mid font-light leading-relaxed max-w-xl mb-12">
+          <p className="text-dooh-dark/65 font-light leading-relaxed max-w-xl mb-12">
             Cada servicio está diseñado para resolver un problema real de comunicación, presencia o conversión. La inteligencia artificial amplifica nuestra capacidad de entrega en cada uno de ellos.
           </p>
 
@@ -334,7 +335,7 @@ export default function Home() {
                   tab px-5 py-2.5 rounded-full text-sm font-semibold transition-colors
                   ${i === 0
                     ? "bg-dooh-lime text-dooh-dark"
-                    : "border border-white/20 text-dooh-gray-mid hover:border-white/40 hover:text-dooh-white"
+                    : "border border-dooh-dark/20 text-dooh-dark/65 hover:border-dooh-dark hover:text-dooh-dark"
                   }
                 `}
               >
@@ -371,28 +372,28 @@ export default function Home() {
               key={panel.id}
               id={`tab-${panel.id}`}
               role="tabpanel"
-              className={`tab-panel grid grid-cols-1 md:grid-cols-2 gap-10 items-start ${i !== 0 ? "hidden" : ""}`}
+              className={`tab-panel flex flex-col gap-10 ${i !== 0 ? "hidden" : ""}`}
             >
               {/* Texto */}
-              <div>
+              <div className="max-w-xl">
                 <p className="text-dooh-lime text-sm italic mb-4 font-light">{panel.claim}</p>
-                <h3 className="text-3xl font-bold tracking-tightest text-dooh-white mb-4 leading-tight">
+                <h3 className="text-3xl font-bold tracking-tightest text-dooh-dark mb-4 leading-tight">
                   {panel.title}
                 </h3>
-                <p className="text-dooh-gray-mid font-light leading-relaxed mb-8">
+                <p className="text-dooh-dark/65 font-light leading-relaxed mb-8">
                   {panel.desc}
                 </p>
                 <div className="tab-tags flex flex-wrap gap-2">
                   {panel.tags.map(tag => (
-                    <span key={tag} className="text-xs border border-white/20 text-dooh-gray-mid px-3 py-1.5 rounded-full">
+                    <span key={tag} className="text-xs border border-dooh-dark/15 text-dooh-dark/60 px-3 py-1.5 rounded-full">
                       {tag}
                     </span>
                   ))}
                 </div>
               </div>
 
-              {/* Slideshow 1:1 */}
-              <div className="service-slideshow relative aspect-square rounded-2xl bg-white/[0.04] border border-white/[0.08] overflow-hidden">
+              {/* Slideshow full-bleed: cada servicio gana escala de página */}
+              <div className="service-slideshow relative w-screen ml-[calc(50%-50vw)] aspect-[5/4] md:aspect-[2.35/1] bg-dooh-dark/5 border-y border-dooh-dark/10 overflow-hidden">
                 <div className="slideshow-track flex h-full">
                   {[1, 2, 3].map(n => (
                     <div key={n} className="slide flex-shrink-0 w-full h-full">
@@ -425,7 +426,7 @@ export default function Home() {
           ))}
 
           {/* Bloque diferenciador */}
-          <p className="mt-16 text-dooh-gray-mid/50 text-sm italic text-center tracking-wide max-w-2xl mx-auto">
+          <p className="mt-16 text-dooh-dark/50 text-sm italic text-center tracking-wide max-w-2xl mx-auto">
             La inteligencia artificial amplifica lo que entregamos. El criterio detrás de cada decisión sigue siendo humano.
           </p>
 
@@ -441,88 +442,29 @@ export default function Home() {
         data-scroll-section
         className="
           min-h-screen flex flex-col justify-center
-          bg-dooh-dark-mid
+          bg-dooh-white
           py-24
         "
       >
         <div className="max-w-screen-xl mx-auto w-full px-8 md:px-14 mb-12">
           <div className="section-label flex items-center gap-3 mb-6">
             <span className="text-dooh-lime text-xs font-semibold tracking-widest uppercase">04</span>
-            <span className="text-dooh-gray-mid text-xs tracking-widest uppercase">Proyectos</span>
-            <span className="section-line" />
+            <span className="text-dooh-dark/45 text-xs tracking-widest uppercase">Proyectos</span>
+            <span className="section-line bg-dooh-dark/10" />
           </div>
-          <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold tracking-tightest text-dooh-white w-1/2 leading-tight mb-3">
+          <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-bold tracking-tightest text-dooh-dark max-w-2xl leading-tight mb-3">
             Trabajo real para marcas con objetivos reales.
           </h2>
-          <p className="text-dooh-gray-mid font-light text-sm max-w-lg">
+          <p className="text-dooh-dark/65 font-light text-sm max-w-lg">
             Cada proyecto comienza con una pregunta estratégica y termina con un resultado medible.
           </p>
         </div>
 
-        {/* Carousel */}
-        <div
-          id="portfolio-carousel"
-          className="overflow-x-auto cursor-grab select-none pb-8"
-          style={{ scrollbarWidth: "none" }}
-        >
-          <div className="portfolio-track flex gap-2 px-8 md:px-14" style={{ width: "max-content" }}>
-            {[
-              { name: "MUUD",           img: "/proyectos/muud.jpg",           cat: "Branding · Packaging",            bg: "#2b1f14", color: "#f7f7f7" },
-              { name: "Meralba",        img: "/proyectos/meralba.png",        cat: "Identidad · Web aspiracional",     bg: "#0d2416", color: "#f7f7f7" },
-              { name: "RVD.AI",         img: "/proyectos/rvd.jpg",            cat: "Web · Contenido con IA",           bg: "#0a0a1a", color: "#ddf81d" },
-              { name: "Edumaia",        img: "/proyectos/edumaia.jpg",        cat: "Web educativa · Lead generation",  bg: "#1a0f00", color: "#f7f7f7" },
-              { name: "KANSO",          img: "/proyectos/kanso.png",          cat: "Identidad gastronómica · Vajilla",  bg: "#111111", color: "#f7f7f7" },
-              { name: "Trust Transfer", img: "/proyectos/trust-transfer.png", cat: "Comunicación institucional",        bg: "#0a1628", color: "#f7f7f7" },
-            ].map((card) => (
-              <article
-                key={card.name}
-                className="portfolio-card relative flex-shrink-0 overflow-hidden rounded-2xl group cursor-pointer"
-                style={{
-                  width: "clamp(180px, 19.4vw, 300px)",
-                  aspectRatio: "1 / 1",
-                  backgroundColor: card.bg,
-                  // @ts-ignore
-                  "--card-bg": card.bg,
-                  "--card-color": card.color,
-                }}
-              >
-                {/* Imagen de fondo */}
-                <div
-                  className="portfolio-img-overlay absolute inset-0 bg-cover bg-center"
-                  style={{ backgroundImage: `url(${card.img})` }}
-                />
-
-                {/* Overlay color en hover */}
-                <div
-                  className="absolute inset-0 opacity-0 group-hover:opacity-[0.85] transition-opacity duration-500 rounded-[inherit]"
-                  style={{ backgroundColor: card.bg }}
-                />
-
-                {/* Contenido */}
-                <div className="portfolio-card-inner relative z-10 h-full flex flex-col justify-between p-6" style={{ color: card.color }}>
-                  {/* CTA aparece en hover */}
-                  <p className="text-[10px] font-semibold tracking-widest uppercase opacity-0 group-hover:opacity-70 transition-all duration-300 self-end">
-                    ¿Trabajamos en algo similar? →
-                  </p>
-                  <div>
-                    <p className="text-[10px] font-semibold tracking-widest uppercase opacity-55 group-hover:opacity-100 translate-y-1.5 group-hover:translate-y-0 transition-all duration-300">
-                      {card.cat}
-                    </p>
-                    <p className="text-base font-bold leading-tight opacity-70 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-300 delay-[50ms]">
-                      {card.name}
-                    </p>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
+        {/* Galería editorial — imágenes a escala de página */}
+        <div className="px-3 md:px-6 pb-4">
+          <ProjectGallery />
         </div>
       </section>
-
-
-      {/* microfrase */}
-      <Microfrase text="Cada decisión de diseño es una decisión de negocio." />
-
 
       {/* ============================================================
           05 · PROCESO
@@ -533,7 +475,7 @@ export default function Home() {
         className="
           relative overflow-hidden
           min-h-screen flex flex-col justify-center
-          bg-dooh-dark
+          bg-dooh-white
           py-24 px-8 md:px-14
         "
       >
@@ -570,9 +512,9 @@ export default function Home() {
               background: [
                 'radial-gradient(ellipse 68% 52% at 50% 50%,',
                 '  transparent 0%,',
-                '  rgba(5,5,7,0.60) 38%,',
-                '  rgba(5,5,7,0.93) 58%,',
-                '  rgba(5,5,7,0.99) 75%',
+                '  rgba(247,247,247,0.58) 38%,',
+                '  rgba(247,247,247,0.92) 58%,',
+                '  rgba(247,247,247,0.99) 75%',
                 ')',
               ].join(' '),
             }}
@@ -584,14 +526,14 @@ export default function Home() {
 
           <div className="section-label flex items-center gap-3 mb-6">
             <span className="text-dooh-lime text-xs font-semibold tracking-widest uppercase">05</span>
-            <span className="text-dooh-gray-mid text-xs tracking-widest uppercase">Cómo trabajamos</span>
-            <span className="section-line" />
+            <span className="text-dooh-dark/45 text-xs tracking-widest uppercase">Cómo trabajamos</span>
+            <span className="section-line bg-dooh-dark/10" />
           </div>
 
-          <h2 className="text-[clamp(1.8rem,4vw,3.5rem)] font-bold tracking-tightest text-dooh-white mb-4 max-w-2xl leading-tight">
+          <h2 className="text-[clamp(1.8rem,4vw,3.5rem)] font-bold tracking-tightest text-dooh-dark mb-4 max-w-2xl leading-tight">
             Un proceso diseñado para lograr resultados predecibles.
           </h2>
-          <p className="text-dooh-gray-mid font-light leading-relaxed max-w-xl mb-16">
+          <p className="text-dooh-dark/65 font-light leading-relaxed max-w-xl mb-16">
             Trabajamos junto al cliente en cada etapa, entendiendo sus necesidades, su contexto y sus objetivos antes de diseñar cualquier solución. El proceso es claro, iterativo y orientado siempre al resultado.
           </p>
 
@@ -618,7 +560,7 @@ export default function Home() {
                 desc: "Acompañamos la implementación y nos aseguramos de que el trabajo funcione en el mundo real, no solo en los archivos de entrega.",
               },
             ].map((step) => (
-              <div key={step.n} data-step-card className="group bg-white/[0.03] border border-white/[0.07] rounded-[20px] p-8 flex flex-col gap-4 overflow-hidden">
+              <div key={step.n} data-step-card className="group bg-dooh-dark rounded-[20px] p-8 flex flex-col gap-4 overflow-hidden">
                 <span className="step-number text-4xl font-bold text-dooh-lime tracking-tightest inline-block">{step.n}</span>
                 <h3 className="text-lg font-bold text-dooh-white tracking-tight leading-snug">{step.title}</h3>
                 <p className="text-sm text-dooh-gray-mid font-light leading-relaxed">{step.desc}</p>
@@ -629,11 +571,6 @@ export default function Home() {
         </div>
       </section>
 
-
-      {/* microfrase */}
-      <Microfrase text="Tu marca es una experiencia viva. La tratamos como tal." />
-
-
       {/* ============================================================
           06 · NOSOTROS
           ============================================================ */}
@@ -642,7 +579,7 @@ export default function Home() {
         data-scroll-section
         className="
           min-h-screen flex flex-col justify-center
-          bg-dooh-dark-mid
+          bg-dooh-white
           py-24 px-8 md:px-14
         "
       >
@@ -650,27 +587,27 @@ export default function Home() {
 
           <div className="section-label flex items-center gap-3 mb-16">
             <span className="text-dooh-lime text-xs font-semibold tracking-widest uppercase">06</span>
-            <span className="text-dooh-gray-mid text-xs tracking-widest uppercase">Nosotros</span>
-            <span className="section-line" />
+            <span className="text-dooh-dark/45 text-xs tracking-widest uppercase">Nosotros</span>
+            <span className="section-line bg-dooh-dark/10" />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-start">
 
             {/* Texto */}
             <div className="nosotros-body">
-              <h2 className="text-[clamp(1.8rem,4vw,3.5rem)] tracking-tightest text-dooh-white mb-8 leading-tight">
+              <h2 className="text-[clamp(1.8rem,4vw,3.5rem)] tracking-tightest text-dooh-dark mb-8 leading-tight">
                 <span className="font-bold block">Una agencia que piensa como estudio.</span>
                 <span id="nosotros-paint-text" className="font-normal block" style={{ color: 'inherit' }}>
-                  <span className="word-paint-nosotros text-dooh-gray-mid">Un</span>{' '}
-                  <span className="word-paint-nosotros text-dooh-gray-mid">equipo</span>{' '}
-                  <span className="word-paint-nosotros text-dooh-gray-mid">que</span>{' '}
-                  <span className="word-paint-nosotros text-dooh-gray-mid">trabaja</span>{' '}
-                  <span className="word-paint-nosotros text-dooh-gray-mid">como</span>{' '}
-                  <span className="word-paint-nosotros text-dooh-gray-mid">socio.</span>
+                  <span className="word-paint-nosotros text-dooh-dark/55">Un</span>{' '}
+                  <span className="word-paint-nosotros text-dooh-dark/55">equipo</span>{' '}
+                  <span className="word-paint-nosotros text-dooh-dark/55">que</span>{' '}
+                  <span className="word-paint-nosotros text-dooh-dark/55">trabaja</span>{' '}
+                  <span className="word-paint-nosotros text-dooh-dark/55">como</span>{' '}
+                  <span className="word-paint-nosotros text-dooh-dark/55">socio.</span>
                 </span>
               </h2>
 
-              <div className="flex flex-col gap-5 text-dooh-gray-mid font-light leading-relaxed text-[15px]">
+              <div className="flex flex-col gap-5 text-dooh-dark/65 font-light leading-relaxed text-[15px]">
                 <p>
                   DOOH nació en Buenos Aires en 2013 como estudio de diseño. A lo largo de trece años de trabajo con marcas de distintos sectores y mercados, desarrollamos una forma de trabajar que integra pensamiento estratégico, diseño con identidad e inteligencia artificial aplicada con propósito.
                 </p>
@@ -700,9 +637,9 @@ export default function Home() {
                   { n: "AR+ES", label: "Mercados activos" },
                   { n: "IA",   label: "Integrada al proceso" },
                 ].map(s => (
-                  <div key={s.n} className="bg-white/[0.03] border border-white/[0.07] rounded-xl p-6">
-                    <p className="text-2xl font-bold text-dooh-white tracking-tight mb-1">{s.n}</p>
-                    <p className="text-xs text-dooh-gray-mid font-light">{s.label}</p>
+                  <div key={s.n} className="bg-dooh-dark/5 border border-dooh-dark/10 rounded-xl p-6">
+                    <p className="text-2xl font-bold text-dooh-dark tracking-tight mb-1">{s.n}</p>
+                    <p className="text-xs text-dooh-dark/55 font-light">{s.label}</p>
                   </div>
                 ))}
               </div>
@@ -723,9 +660,9 @@ export default function Home() {
         data-scroll-section
         className="
           min-h-screen flex flex-col items-center justify-center
-          bg-dooh-dark
+          bg-dooh-white
           py-24 px-8 md:px-14
-          border-t border-white/[0.06]
+          border-t border-dooh-dark/10
         "
       >
         <div className="max-w-screen-xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-16 items-start">
@@ -734,14 +671,14 @@ export default function Home() {
           <div className="contacto-left">
             <div className="section-label flex items-center gap-3 mb-10">
               <span className="text-dooh-lime text-xs font-semibold tracking-widest uppercase">07</span>
-              <span className="text-dooh-gray-mid text-xs tracking-widest uppercase">Contacto</span>
-              <span className="section-line" />
+              <span className="text-dooh-dark/45 text-xs tracking-widest uppercase">Contacto</span>
+              <span className="section-line bg-dooh-dark/10" />
             </div>
 
-            <h2 className="text-[clamp(2rem,4.5vw,4rem)] font-bold tracking-tightest text-dooh-white leading-tight mb-6">
+            <h2 className="text-[clamp(2rem,4.5vw,4rem)] font-bold tracking-tightest text-dooh-dark leading-tight mb-6">
               Contanos en qué estás trabajando.
             </h2>
-            <p className="text-dooh-gray-mid font-light leading-relaxed mb-10 max-w-sm">
+            <p className="text-dooh-dark/65 font-light leading-relaxed mb-10 max-w-sm">
               Compartinos tu proyecto o tu desafío actual. En menos de 24 horas te respondemos con una perspectiva concreta sobre cómo podemos ayudarte.
             </p>
 
@@ -752,7 +689,7 @@ export default function Home() {
               rel="noopener noreferrer"
               className="
                 inline-flex items-center gap-3
-                border border-white/15 text-dooh-white
+                border border-dooh-dark/20 text-dooh-dark
                 text-sm px-6 py-3.5 rounded-full
                 hover:border-dooh-lime/50 hover:text-dooh-lime transition-colors
               "
@@ -766,21 +703,35 @@ export default function Home() {
 
           {/* Lado derecho — formulario */}
           <form
-            action="#"
+            name="contacto-dooh"
+            method="POST"
+            action="/gracias"
+            data-netlify="true"
+            data-netlify-honeypot="bot-field"
             className="form-fields flex flex-col gap-4"
           >
+            <input type="hidden" name="form-name" value="contacto-dooh" />
+            <p className="hidden" aria-hidden="true">
+              <label>
+                No completar este campo si sos una persona
+                <input name="bot-field" tabIndex={-1} autoComplete="off" />
+              </label>
+            </p>
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="nombre" className="text-xs text-dooh-gray-mid tracking-widest uppercase">
+              <label htmlFor="nombre" className="text-xs text-dooh-dark/55 tracking-widest uppercase">
                 Nombre
               </label>
               <input
                 id="nombre"
+                name="nombre"
                 type="text"
                 placeholder="Tu nombre"
+                autoComplete="name"
+                required
                 className="
-                  bg-white/[0.04] border border-white/[0.10]
-                  rounded-xl px-5 py-3.5 text-sm text-dooh-white
-                  placeholder:text-white/20
+                  bg-white border border-dooh-dark/15
+                  rounded-xl px-5 py-3.5 text-sm text-dooh-dark
+                  placeholder:text-dooh-dark/30
                   focus:outline-none focus:border-dooh-lime/50
                   transition-colors
                 "
@@ -788,17 +739,20 @@ export default function Home() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="contacto-dato" className="text-xs text-dooh-gray-mid tracking-widest uppercase">
-                Email o WhatsApp
+              <label htmlFor="email" className="text-xs text-dooh-dark/55 tracking-widest uppercase">
+                Email
               </label>
               <input
-                id="contacto-dato"
-                type="text"
-                placeholder="hello@tuempresa.com  ·  +54 9 11..."
+                id="email"
+                name="email"
+                type="email"
+                placeholder="hola@tuempresa.com"
+                autoComplete="email"
+                required
                 className="
-                  bg-white/[0.04] border border-white/[0.10]
-                  rounded-xl px-5 py-3.5 text-sm text-dooh-white
-                  placeholder:text-white/20
+                  bg-white border border-dooh-dark/15
+                  rounded-xl px-5 py-3.5 text-sm text-dooh-dark
+                  placeholder:text-dooh-dark/30
                   focus:outline-none focus:border-dooh-lime/50
                   transition-colors
                 "
@@ -806,17 +760,39 @@ export default function Home() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="mensaje" className="text-xs text-dooh-gray-mid tracking-widest uppercase">
+              <label htmlFor="whatsapp" className="text-xs text-dooh-dark/55 tracking-widest uppercase">
+                WhatsApp <span className="normal-case tracking-normal">(opcional)</span>
+              </label>
+              <input
+                id="whatsapp"
+                name="whatsapp"
+                type="tel"
+                placeholder="+54 9 11..."
+                autoComplete="tel"
+                className="
+                  bg-white border border-dooh-dark/15
+                  rounded-xl px-5 py-3.5 text-sm text-dooh-dark
+                  placeholder:text-dooh-dark/30
+                  focus:outline-none focus:border-dooh-lime/50
+                  transition-colors
+                "
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="mensaje" className="text-xs text-dooh-dark/55 tracking-widest uppercase">
                 ¿En qué podemos ayudarte?
               </label>
               <textarea
                 id="mensaje"
+                name="mensaje"
                 rows={5}
                 placeholder="Contanos tu proyecto, desafío o pregunta..."
+                required
                 className="
-                  bg-white/[0.04] border border-white/[0.10]
-                  rounded-xl px-5 py-3.5 text-sm text-dooh-white
-                  placeholder:text-white/20
+                  bg-white border border-dooh-dark/15
+                  rounded-xl px-5 py-3.5 text-sm text-dooh-dark
+                  placeholder:text-dooh-dark/30
                   focus:outline-none focus:border-dooh-lime/50
                   transition-colors resize-none
                 "
@@ -837,6 +813,9 @@ export default function Home() {
                 <path d="M1 7h12M8 3l5 4-5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
+            <p className="text-xs text-dooh-dark/45 leading-relaxed">
+              Usaremos tus datos únicamente para responder esta consulta.
+            </p>
           </form>
 
         </div>
