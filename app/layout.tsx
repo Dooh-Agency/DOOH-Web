@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Nunito_Sans } from "next/font/google";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { Animations }   from "@/components/Animations";
+import { PlannerAuthRedirect } from "@/components/PlannerAuthRedirect";
 import "./globals.css";
 
 const nunitoSans = Nunito_Sans({
@@ -29,6 +30,7 @@ export default function RootLayout({
   return (
     <html lang="es" className={nunitoSans.variable}>
       <body>
+        <PlannerAuthRedirect />
         <SmoothScroll />
         <Animations />
         {children}

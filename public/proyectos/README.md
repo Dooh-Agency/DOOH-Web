@@ -1,6 +1,6 @@
 # Imágenes de proyectos
 
-Guardá aquí las imágenes que se mostrarán en la ficha de cada caso.
+Guardá aquí las imágenes que se mostrarán en la ficha de cada caso. Usá una carpeta por proyecto cuando tenga varias imágenes, por ejemplo `public/proyectos/farmalivery/`.
 
 Usá un nombre claro y correlativo por proyecto, por ejemplo:
 
@@ -12,4 +12,4 @@ Usá un nombre claro y correlativo por proyecto, por ejemplo:
 
 Formatos recomendados: `.jpg`, `.png` o `.webp`. Para una buena carga web, procurar que cada imagen pese menos de 1 MB y tenga al menos 1800 px de ancho cuando sea horizontal.
 
-Después de agregar las imágenes, hay que incluir sus rutas en `components/ProjectGallery.tsx` para que aparezcan dentro de la ficha del proyecto.
+Después de agregar las imágenes, hay que incluir sus rutas en `components/ProjectGallery.tsx` para que aparezcan dentro de la ficha del proyecto. También se deben completar allí el nombre, categoría, descripción y servicios del caso; no inventar esa información.

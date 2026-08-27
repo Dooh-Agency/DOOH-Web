@@ -19,6 +19,26 @@
 }
 
 @layer utilities {
+  .planner-modal-scroll {
+    scrollbar-color: rgba(5, 5, 7, 0.55) rgba(5, 5, 7, 0.08);
+    scrollbar-width: thin;
+  }
+
+  .planner-modal-scroll::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  .planner-modal-scroll::-webkit-scrollbar-track {
+    background: rgba(5, 5, 7, 0.08);
+    border-radius: 999px;
+  }
+
+  .planner-modal-scroll::-webkit-scrollbar-thumb {
+    background: rgba(5, 5, 7, 0.55);
+    border: 2px solid white;
+    border-radius: 999px;
+  }
+
   /* Section label — línea extensible */
   .section-line {
     @apply flex-1 h-px bg-white/10;
