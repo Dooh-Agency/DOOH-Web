@@ -4,8 +4,9 @@
    Animations.tsx — Sistema GSAP + ScrollTrigger
    ================================================================
    Filosofía de movimiento:
-   · Los textos salen de abajo con Y + opacidad. La opacidad
-     llega a 1 DESPUÉS que la posición: el texto "emerge".
+   · Los textos salen de abajo. La visibilidad nunca depende del
+     scroll: así el contenido sigue siendo legible si un trigger se
+     recalcula mientras el usuario navega.
    · Las grillas nunca aparecen juntas: stagger milimétrico
      guía la mirada de izquierda a derecha, arriba a abajo.
    · Las curvas de aceleración cambian según la naturaleza
@@ -147,7 +148,7 @@ export function Animations() {
         if (spans.length) {
           gsap.from(spans, {
             scrollTrigger: ST(label, '85%'),
-            x: -14, opacity: 0,
+            x: -14,
             duration: D.label, ease: E.body,
             stagger: 0.08,
           })
@@ -175,7 +176,7 @@ export function Animations() {
         if (el.closest('.nosotros-body, .contacto-left')) return
         gsap.from(el, {
           scrollTrigger: ST(el, '82%'),
-          y: 58, opacity: 0,
+          y: 58,
           duration: D.headline, ease: E.headline,
         })
       })
@@ -187,7 +188,7 @@ export function Animations() {
       document.querySelectorAll('.anim-body').forEach(el => {
         gsap.from(el, {
           scrollTrigger: ST(el, '85%'),
-          y: 32, opacity: 0,
+          y: 32,
           duration: D.body, ease: E.body,
         })
       })
@@ -200,7 +201,7 @@ export function Animations() {
          ══════════════════════════════════════════════════════════ */
       gsap.from('#posicionamiento .pillars-grid > *', {
         scrollTrigger: ST('#posicionamiento .pillars-grid', '72%'),
-        y: 48, opacity: 0, scale: 0.96,
+        y: 48, scale: 0.96,
         duration: D.card, ease: E.card,
         stagger: { amount: 0.3, from: 'start' },
       })
@@ -300,18 +301,18 @@ export function Animations() {
          ══════════════════════════════════════════════════════════ */
       gsap.from('#servicios [role="tablist"] button', {
         scrollTrigger: ST('#servicios [role="tablist"]', '82%'),
-        y: 20, opacity: 0,
+        y: 20,
         duration: D.label, ease: E.body,
         stagger: 0.06,
       })
       gsap.from('#servicios .service-slideshow', {
         scrollTrigger: ST('#servicios .service-slideshow', '78%'),
-        y: 40, opacity: 0, scale: 0.97,
+        y: 40, scale: 0.97,
         duration: D.card, ease: E.card,
       })
       gsap.from('#servicios .tab-tags > span', {
         scrollTrigger: ST('#servicios .tab-tags', '85%'),
-        y: 16, opacity: 0,
+        y: 16,
         duration: 0.45, ease: E.body,
         stagger: 0.07,
       })
@@ -403,7 +404,7 @@ export function Animations() {
          ══════════════════════════════════════════════════════════ */
       gsap.from('#proyectos .portfolio-track article', {
         scrollTrigger: ST('#proyectos', '68%'),
-        x: -90, opacity: 0,
+        x: -90,
         duration: 0.72, ease: 'power3.out',
         stagger: { amount: 0.65, from: 'start' },
       })
@@ -465,13 +466,13 @@ export function Animations() {
          ══════════════════════════════════════════════════════════ */
       gsap.from('#proceso .steps-grid > *', {
         scrollTrigger: ST('#proceso .steps-grid', '72%'),
-        y: 52, opacity: 0, scale: 0.96,
+        y: 52, scale: 0.96,
         duration: D.card, ease: E.card,
         stagger: { amount: 0.38, from: 'start' },
       })
       gsap.from('#proceso .step-number', {
         scrollTrigger: ST('#proceso .steps-grid', '72%'),
-        scale: 0.65, opacity: 0,
+        scale: 0.65,
         duration: D.stat, ease: E.stat,
         stagger: { amount: 0.38 },
       })
@@ -480,23 +481,17 @@ export function Animations() {
       /* ══════════════════════════════════════════════════════════
          06 · NOSOTROS
          Párrafos: stagger suave, uno detrás del otro.
-         Dato "13 años": entra solo, grande, con peso.
-         Stats 2×2: stagger con back para que cada número pop.
+         Indicadores: una franja de cinco cards con entrada escalonada.
          ══════════════════════════════════════════════════════════ */
       gsap.from('#nosotros .nosotros-body > *', {
         scrollTrigger: ST('#nosotros .nosotros-body', '75%'),
-        y: 36, opacity: 0,
+        y: 36,
         duration: D.body, ease: E.body,
         stagger: 0.14,
       })
-      gsap.from('#nosotros .dato-destacado', {
-        scrollTrigger: ST('#nosotros .dato-destacado', '80%'),
-        y: 30, opacity: 0, scale: 0.97,
-        duration: D.headline, ease: E.headline,
-      })
       gsap.from('#nosotros .stats-grid > *', {
         scrollTrigger: ST('#nosotros .stats-grid', '78%'),
-        y: 28, opacity: 0, scale: 0.94,
+        y: 28, scale: 0.94,
         duration: D.stat, ease: E.stat,
         stagger: { amount: 0.32, from: 'start' },
       })
@@ -510,13 +505,13 @@ export function Animations() {
          ══════════════════════════════════════════════════════════ */
       gsap.from('#contacto .contacto-left > *', {
         scrollTrigger: ST('#contacto', '72%'),
-        y: 38, opacity: 0,
+        y: 38,
         duration: D.body, ease: E.body,
         stagger: 0.13,
       })
       gsap.from('#contacto .form-fields > *', {
         scrollTrigger: ST('#contacto', '72%'),
-        y: 32, opacity: 0,
+        y: 32,
         duration: D.card, ease: E.body,
         stagger: 0.1,
       })
@@ -677,7 +672,7 @@ export function Animations() {
          ══════════════════════════════════════════════════════════ */
       gsap.from('footer > *', {
         scrollTrigger: ST('footer', '90%'),
-        y: 24, opacity: 0,
+        y: 24,
         duration: D.body, ease: E.body,
       })
 
@@ -770,11 +765,9 @@ export function Animations() {
          SCROLL REFRESH — recalcula posiciones una vez que todo
          el DOM, Lenis y los estilos están completamente asentados.
 
-         Problema sin esto: el HTML del servidor renderiza los
-         elementos visibles; GSAP los oculta inmediatamente con
-         el estado `from`; ScrollTrigger calcula posiciones antes
-         de que el layout esté estable → algunos triggers no
-         disparan y los elementos quedan invisibles.
+         Aunque los reveals no ocultan contenido, el refresco evita
+         que un movimiento quede calculado con medidas previas a la
+         carga de imágenes y al registro de Lenis.
 
          requestAnimationFrame garantiza que el primer paint
          del navegador ya ocurrió. El timeout de 120ms le da

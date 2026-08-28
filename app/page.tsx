@@ -1,4 +1,5 @@
 import { Logo } from "@/components/Logo";
+import { ClientLogoCarousel } from "@/components/ClientLogoCarousel";
 import { ProjectGallery } from "@/components/ProjectGallery";
 
 /* ================================================================
@@ -171,7 +172,6 @@ export default function Home() {
         </div>
       </section>
 
-
       {/* ============================================================
           02 · POSICIONAMIENTO
           ============================================================ */}
@@ -246,11 +246,6 @@ export default function Home() {
             ))}
           </div>
 
-          {/* Microfrase de cierre */}
-          <p className="mt-12 text-dooh-dark/45 text-sm italic text-center tracking-wide">
-            Pensamos en sistemas. Diseñamos con alma.
-          </p>
-
         </div>
       </section>
 
@@ -324,8 +319,13 @@ export default function Home() {
             Cada servicio está diseñado para resolver un problema real de comunicación, presencia o conversión. La inteligencia artificial amplifica nuestra capacidad de entrega en cada uno de ellos.
           </p>
 
-          {/* Tabs */}
-          <div role="tablist" aria-label="Servicios" className="flex flex-wrap gap-2 mb-12">
+          {/* Navegación y contenido: en escritorio la navegación funciona como una columna lateral. */}
+          <div className="grid grid-cols-1 gap-y-10 md:grid-cols-[14rem_minmax(0,1fr)] md:gap-x-14 md:gap-y-0">
+          <div
+            role="tablist"
+            aria-label="Servicios"
+            className="flex flex-nowrap gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-col md:items-stretch md:gap-3 md:overflow-visible"
+          >
             {["Branding & Identidad", "Diseño Web & UX/UI", "Contenido & IA"].map((tab, i) => (
               <button
                 key={tab}
@@ -333,7 +333,7 @@ export default function Home() {
                 aria-selected={i === 0}
                 data-tab={`s${i + 1}`}
                 className={`
-                  tab px-5 py-2.5 rounded-full text-sm font-semibold transition-colors
+                  tab shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold text-left transition-colors md:w-full
                   ${i === 0
                     ? "bg-dooh-lime text-dooh-dark"
                     : "border border-dooh-dark/20 text-dooh-dark/65 hover:border-dooh-dark hover:text-dooh-dark"
@@ -373,10 +373,10 @@ export default function Home() {
               key={panel.id}
               id={`tab-${panel.id}`}
               role="tabpanel"
-              className={`tab-panel flex flex-col gap-10 ${i !== 0 ? "hidden" : ""}`}
+              className={`tab-panel contents ${i !== 0 ? "hidden" : ""}`}
             >
-              {/* Texto */}
-              <div className="max-w-xl">
+              {/* Texto: a la derecha de la navegación en escritorio. */}
+              <div className="max-w-2xl md:col-start-2">
                 <p className="text-dooh-lime text-sm italic mb-4 font-light">{panel.claim}</p>
                 <h3 className="text-3xl font-bold tracking-tightest text-dooh-dark mb-4 leading-tight">
                   {panel.title}
@@ -393,8 +393,8 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Slideshow full-bleed: cada servicio gana escala de página */}
-              <div className="service-slideshow relative w-screen ml-[calc(50%-50vw)] aspect-[5/4] md:aspect-[2.35/1] bg-dooh-dark/5 border-y border-dooh-dark/10 overflow-hidden">
+              {/* Galería full-bleed: queda debajo de toda la navegación y el texto. */}
+              <div className="service-slideshow relative w-screen ml-[calc(50%-50vw)] mt-2 md:col-span-2 md:mt-14 aspect-[5/4] md:aspect-[2.35/1] bg-dooh-dark/5 border-y border-dooh-dark/10 overflow-hidden">
                 <div className="slideshow-track flex h-full">
                   {[1, 2, 3].map(n => (
                     <div key={n} className="slide flex-shrink-0 w-full h-full">
@@ -426,14 +426,9 @@ export default function Home() {
             </div>
           ))}
 
-          {/* Bloque diferenciador */}
-          <p className="mt-16 text-dooh-dark/50 text-sm italic text-center tracking-wide max-w-2xl mx-auto">
-            La inteligencia artificial amplifica lo que entregamos. El criterio detrás de cada decisión sigue siendo humano.
-          </p>
-
+          </div>
         </div>
       </section>
-
 
       {/* ============================================================
           04 · PROYECTOS / PORTFOLIO
@@ -592,23 +587,21 @@ export default function Home() {
             <span className="section-line bg-dooh-dark/10" />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-start">
+          <div className="grid grid-cols-1 items-start gap-10 md:grid-cols-2 md:gap-20">
+            {/* Título a la izquierda; relato institucional a la derecha. */}
+            <h2 className="text-[clamp(1.8rem,4vw,3.5rem)] tracking-tightest text-dooh-dark leading-tight">
+              <span className="font-bold block">Una agencia que piensa como estudio.</span>
+              <span id="nosotros-paint-text" className="font-normal block" style={{ color: 'inherit' }}>
+                <span className="word-paint-nosotros text-dooh-dark/55">Un</span>{' '}
+                <span className="word-paint-nosotros text-dooh-dark/55">equipo</span>{' '}
+                <span className="word-paint-nosotros text-dooh-dark/55">que</span>{' '}
+                <span className="word-paint-nosotros text-dooh-dark/55">trabaja</span>{' '}
+                <span className="word-paint-nosotros text-dooh-dark/55">como</span>{' '}
+                <span className="word-paint-nosotros text-dooh-dark/55">socio.</span>
+              </span>
+            </h2>
 
-            {/* Texto */}
-            <div className="nosotros-body">
-              <h2 className="text-[clamp(1.8rem,4vw,3.5rem)] tracking-tightest text-dooh-dark mb-8 leading-tight">
-                <span className="font-bold block">Una agencia que piensa como estudio.</span>
-                <span id="nosotros-paint-text" className="font-normal block" style={{ color: 'inherit' }}>
-                  <span className="word-paint-nosotros text-dooh-dark/55">Un</span>{' '}
-                  <span className="word-paint-nosotros text-dooh-dark/55">equipo</span>{' '}
-                  <span className="word-paint-nosotros text-dooh-dark/55">que</span>{' '}
-                  <span className="word-paint-nosotros text-dooh-dark/55">trabaja</span>{' '}
-                  <span className="word-paint-nosotros text-dooh-dark/55">como</span>{' '}
-                  <span className="word-paint-nosotros text-dooh-dark/55">socio.</span>
-                </span>
-              </h2>
-
-              <div className="flex flex-col gap-5 text-dooh-dark/65 font-light leading-relaxed text-[15px]">
+            <div className="nosotros-body flex flex-col gap-5 text-dooh-dark/65 font-light leading-relaxed text-[15px]">
                 <p>
                   DOOH nació en Buenos Aires en 2013 como estudio de diseño. A lo largo de trece años de trabajo con marcas de distintos sectores y mercados, desarrollamos una forma de trabajar que integra pensamiento estratégico, diseño con identidad e inteligencia artificial aplicada con propósito.
                 </p>
@@ -618,40 +611,33 @@ export default function Home() {
                 <p>
                   Trabajamos junto a nuestros clientes como parte del equipo, no como proveedores externos. Esa diferencia define el resultado final.
                 </p>
-              </div>
             </div>
+          </div>
 
-            {/* Dato institucional + pilares */}
-            <div className="flex flex-col gap-6">
-
-              {/* Dato destacado */}
-              <div className="dato-destacado bg-dooh-lime rounded-2xl p-10">
-                <p className="text-4xl font-bold tracking-tightest text-dooh-dark leading-none mb-2">13 años</p>
-                <p className="text-dooh-dark/70 font-light text-sm">2 mercados · Buenos Aires & Málaga</p>
-              </div>
-
-              {/* Stats */}
-              <div className="stats-grid grid grid-cols-2 gap-4">
-                {[
-                  { n: "2013", label: "Fundación" },
-                  { n: "2",    label: "Ciudades" },
-                  { n: "AR+ES", label: "Mercados activos" },
-                  { n: "IA",   label: "Integrada al proceso" },
-                ].map(s => (
-                  <div key={s.n} className="bg-dooh-dark/5 border border-dooh-dark/10 rounded-xl p-6">
-                    <p className="text-2xl font-bold text-dooh-dark tracking-tight mb-1">{s.n}</p>
-                    <p className="text-xs text-dooh-dark/55 font-light">{s.label}</p>
-                  </div>
-                ))}
-              </div>
-
-
+          {/* Indicadores compactos al cierre del módulo. */}
+          <div className="stats-grid mt-14 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-5">
+            <div className="bg-dooh-lime rounded-xl p-5 md:p-6">
+              <p className="text-2xl font-bold tracking-tightest text-dooh-dark leading-none mb-2">13 años</p>
+              <p className="text-dooh-dark/70 font-light text-xs">2 mercados · Buenos Aires & Málaga</p>
             </div>
+            {[
+              { n: "2013", label: "Fundación" },
+              { n: "2",    label: "Ciudades" },
+              { n: "AR+ES", label: "Mercados activos" },
+              { n: "IA",   label: "Integrada al proceso" },
+            ].map(s => (
+              <div key={s.n} className="bg-dooh-dark/5 border border-dooh-dark/10 rounded-xl p-5 md:p-6">
+                <p className="text-xl font-bold text-dooh-dark tracking-tight mb-1">{s.n}</p>
+                <p className="text-xs text-dooh-dark/55 font-light">{s.label}</p>
+              </div>
+            ))}
           </div>
 
         </div>
       </section>
 
+
+      <ClientLogoCarousel />
 
       {/* ============================================================
           07 · CONTACTO / CTA FINAL

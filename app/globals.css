@@ -47,4 +47,27 @@
   /* Carousel drag cursor */
   .cursor-grab  { cursor: grab;    }
   .cursor-grabbing { cursor: grabbing; }
+
+  .client-logo-fade {
+    mask-image: linear-gradient(to right, transparent, black 7%, black 93%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, black 7%, black 93%, transparent);
+  }
+
+  .client-logo-marquee {
+    display: flex;
+    width: max-content;
+    animation: client-logo-marquee 42s linear infinite;
+  }
+
+  .client-logo-marquee:hover {
+    animation-play-state: paused;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .client-logo-marquee { animation: none; }
+  }
+}
+
+@keyframes client-logo-marquee {
+  to { transform: translateX(-50%); }
 }

@@ -39,7 +39,7 @@ const projects: Project[] = [
     description: 'Rediseño de presencia digital y sistema de comunicación para educación en IA.',
     background: '#0a0a1a', color: '#ddf81d', size: 'aspect-[4/5]',
     images: [
-      { src: '/proyectos/rvd.jpg', alt: 'Proyecto RVD.AI: web y contenido con IA' },
+      { src: '/proyectos/clientes/rvd-ai.jpg', alt: 'Proyecto RVD.AI: web y contenido con IA' },
       ...galleryImages('rvd.ai-rivadavia', 'RVD.AI', 3),
     ],
   },
@@ -49,7 +49,7 @@ const projects: Project[] = [
     description: 'Experiencia web orientada a comunicar valor y generar consultas calificadas.',
     background: '#1a0f00', color: '#f7f7f7', size: 'aspect-[4/3]',
     images: [
-      { src: '/proyectos/edumaia.jpg', alt: 'Proyecto Edumaia: experiencia web educativa' },
+      { src: '/proyectos/clientes/edumaia.jpg', alt: 'Proyecto Edumaia: experiencia web educativa' },
       ...galleryImages('edumaia', 'Edumaia', 5),
     ],
   },
@@ -59,7 +59,7 @@ const projects: Project[] = [
     description: 'Sistema de marca y comunicación para una propuesta gastronómica de autor.',
     background: '#111111', color: '#f7f7f7', size: 'aspect-[5/4]',
     images: [
-      { src: '/proyectos/kanso.png', alt: 'Proyecto KANSO: identidad gastronómica' },
+      { src: '/proyectos/clientes/kanso.png', alt: 'Proyecto KANSO: identidad gastronómica' },
       ...galleryImages('kanso', 'KANSO', 9),
     ],
   },
@@ -75,63 +75,90 @@ const projects: Project[] = [
     category: 'Branding · Packaging',
     description: 'Sistema de identidad y aplicaciones para una propuesta gastronómica.',
     background: '#37231c', color: '#f7f7f7', size: 'aspect-[4/3]',
-    images: galleryImages('epicook-catering', 'Epicook Catering', 2),
+    images: [
+      { src: '/proyectos/clientes/epicook-catering.jpg', alt: 'Proyecto Epicook Catering: identidad y packaging' },
+      ...galleryImages('epicook-catering', 'Epicook Catering', 2),
+    ],
   },
   {
     name: 'Kapelusz',
     category: 'Identidad · Comunicación',
     description: 'Proyecto de comunicación visual y desarrollo de presencia digital.',
     background: '#29201d', color: '#f7f7f7', size: 'aspect-[3/4]',
-    images: galleryImages('kapeluz', 'Kapelusz', 3),
+    images: [
+      { src: '/proyectos/clientes/kapelusz.jpg', alt: 'Proyecto Kapelusz: identidad y comunicación' },
+      ...galleryImages('kapeluz', 'Kapelusz', 3),
+    ],
   },
   {
     name: 'Mentora',
     category: 'Branding · Comunicación',
     description: 'Identidad gráfica y sistema de comunicación para una marca con visión propia.',
     background: '#231f36', color: '#f7f7f7', size: 'aspect-[4/5]',
-    images: galleryImages('mentora', 'Mentora', 5),
+    images: [
+      { src: '/proyectos/clientes/mentora.png', alt: 'Proyecto Mentora: identidad y comunicación' },
+      ...galleryImages('mentora', 'Mentora', 5),
+    ],
   },
   {
     name: 'Trotécnica Láser',
     category: 'Identidad · Comunicación institucional',
     description: 'Sistema visual y piezas institucionales para una empresa de tecnología aplicada.',
     background: '#17232a', color: '#f7f7f7', size: 'aspect-[4/3]',
-    images: galleryImages('trotecnica-laser', 'Trotécnica Láser', 6),
+    images: [
+      { src: '/proyectos/clientes/trotecnica-laser.jpg', alt: 'Proyecto Trotécnica Láser: identidad y comunicación' },
+      ...galleryImages('trotecnica-laser', 'Trotécnica Láser', 6),
+    ],
   },
   {
     name: 'Deteik',
     category: 'Branding · Comunicación',
     description: 'Desarrollo de identidad visual y aplicaciones de marca.',
     background: '#21302c', color: '#f7f7f7', size: 'aspect-[5/4]',
-    images: galleryImages('deteik', 'Deteik', 2),
+    images: [
+      { src: '/proyectos/clientes/deteik.jpg', alt: 'Proyecto Deteik: identidad y comunicación' },
+      ...galleryImages('deteik', 'Deteik', 2),
+    ],
   },
   {
     name: 'Electroverse',
     category: 'Identidad · Comunicación',
     description: 'Construcción de lenguaje visual y comunicación de marca.',
     background: '#171527', color: '#f7f7f7', size: 'aspect-[3/4]',
-    images: galleryImages('electroverse', 'Electroverse', 2),
+    images: [
+      { src: '/proyectos/clientes/electroverse.jpg', alt: 'Proyecto Electroverse: identidad y comunicación' },
+      ...galleryImages('electroverse', 'Electroverse', 2),
+    ],
   },
   {
     name: 'CashPoint',
     category: 'Branding · Comunicación institucional',
     description: 'Identidad y sistema de comunicación para una empresa de servicios.',
     background: '#14251f', color: '#f7f7f7', size: 'aspect-[4/3]',
-    images: galleryImages('cashpoint', 'CashPoint', 6),
+    images: [
+      { src: '/proyectos/clientes/cashpoint.jpg', alt: 'Proyecto CashPoint: identidad y comunicación institucional' },
+      ...galleryImages('cashpoint', 'CashPoint', 6),
+    ],
   },
   {
     name: 'GoPush',
     category: 'Branding · Comunicación corporativa',
     description: 'Diseño y desarrollo de marca gráfica y comunicación corporativa.',
     background: '#202d36', color: '#f7f7f7', size: 'aspect-[4/5]',
-    images: galleryImages('gopush', 'GoPush', 5),
+    images: [
+      { src: '/proyectos/clientes/gopush.jpg', alt: 'Proyecto GoPush: identidad y comunicación corporativa' },
+      ...galleryImages('gopush', 'GoPush', 5),
+    ],
   },
   {
     name: 'Fiduc Inversiones',
     category: 'Branding · Desarrollo web',
     description: 'Rediseño de marca gráfica y desarrollo de sitio web.',
     background: '#173d3c', color: '#f7f7f7', size: 'aspect-[4/3]',
-    images: galleryImages('fiduc-inversiones', 'Fiduc Inversiones', 5),
+    images: [
+      { src: '/proyectos/clientes/fiduc-inversiones.jpg', alt: 'Proyecto Fiduc Inversiones: branding y desarrollo web' },
+      ...galleryImages('fiduc-inversiones', 'Fiduc Inversiones', 5),
+    ],
   },
 ]
 
@@ -159,9 +186,9 @@ export function ProjectGallery() {
 
   return (
     <>
-      <div className="portfolio-track columns-1 md:columns-3 gap-3 md:gap-5">
+      <div className="portfolio-track grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 md:gap-5">
         {projects.map((project) => (
-          <article key={project.name} className={`portfolio-card inline-block w-full mb-3 md:mb-5 break-inside-avoid ${project.size}`}>
+          <article key={project.name} className="portfolio-card aspect-square w-full">
             <button
               type="button"
               onClick={() => openProject(project)}

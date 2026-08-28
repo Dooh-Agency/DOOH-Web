@@ -1017,4 +1017,4 @@ export const blogPosts: BlogPost[] = [
 ] as BlogPost[];
 
 export const getBlogPost = (slug: string) =>
-  blogPosts.find((post) => post.slug === slug);
+  blogPosts.find((post) => post.slug === decodeURIComponent(slug));
