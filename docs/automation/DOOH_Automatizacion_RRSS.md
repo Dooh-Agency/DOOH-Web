@@ -2,7 +2,7 @@
 
 **Estado:** configuración inicial para validar con aprobación humana.  
 **Basado en:** [`../base/Prompt_Automatizacion_RRSS.md`](../base/Prompt_Automatizacion_RRSS.md), que se conserva como plantilla reutilizable para otros clientes.  
-**Alcance:** producción de contenido para DOOH Agency; no modifica ni publica contenido de clientes.
+**Alcance:** producción editorial de blog y contenido para redes de DOOH Agency; no modifica ni publica contenido de clientes.
 
 ---
 
@@ -69,6 +69,8 @@ No inventar proyectos, métricas, clientes, integrantes, lanzamientos ni resulta
 
 ## 4. Frecuencia y producción
 
+- **Nota de blog:** 1 por mes, con una previsión de 12 notas por año. Es la cadencia recomendada para el primer año: prioriza casos, procesos y miradas propias antes que volumen. No se agrega una segunda nota mensual salvo que exista un caso, lanzamiento o investigación con información aprobada y valor editorial claro.
+- **Paquete de difusión:** cada nota aprobada propone de 3 a 5 adaptaciones distribuidas durante el mes. Puede incluir carrusel o reel para Instagram, post de LinkedIn, story con enlace y una recuperación posterior desde otro ángulo. Las adaptaciones no duplican el artículo: presentan una idea concreta y dirigen a la URL de la nota.
 - **Piezas principales:** 3 por semana.
 - **Stories:** 1 story de Instagram asociada a cada pieza principal; 3 por semana.
 - **Total previsto por tanda:** 6 entregables visuales; cada pieza principal lleva un único caption bilingüe.
@@ -106,12 +108,22 @@ La misma idea no se replica de manera idéntica en ambas redes. Se define para q
 
 Las fechas especiales, lanzamientos y semanas sin publicación se cargan antes de cada corrida. Si una semana indica “No publicar”, no se generan piezas ni se dispara ninguna publicación.
 
+### Flujo editorial mensual de blog
+
+1. Durante la última semana del mes anterior, elegir un tema a partir de los inputs y del balance editorial; registrar objetivo, audiencia, consulta o problema que busca resolver, fuentes y proyectos autorizados.
+2. Preparar brief, esquema y borrador de la nota. Debe aportar experiencia de primera mano, análisis propio o un caso verificable; no resumir tendencias sin una mirada de DOOH.
+3. Someter la nota a QA editorial: exactitud, autorización de clientes, tono, enlaces internos, título, metadescripción, imagen y CTA.
+4. Dejar la nota en `Pendiente de aprobación`, `Revisar`, `Aprobado` o `Rechazado`. El estado de la nota es independiente del estado de sus adaptaciones para redes.
+5. Publicar la nota en el sitio únicamente después de su aprobación editorial. Registrar la URL final y usarla como fuente en las filas sociales relacionadas.
+
+La automatización genera y organiza el material editorial, pero no publica notas en el sitio de forma autónoma. La publicación web requiere la misma aprobación humana explícita que las redes.
+
 ---
 
 ## 5. Flujo y aprobación humana
 
-1. Revisar esta configuración, los documentos de marca y el historial de contenido aprobado para evitar repeticiones.
-2. Armar la grilla semanal con fecha, plataforma, eje, categoría e idioma.
+1. Revisar esta configuración, los documentos de marca, el calendario editorial mensual y el historial de contenido aprobado para evitar repeticiones.
+2. Armar la grilla semanal con fecha, plataforma, eje, categoría e idioma. Si deriva de una nota, registrar su título o URL como `Nota fuente`.
 3. Generar el copy, caption y hashtags con español primero e inglés como segunda sección dentro del mismo caption.
 4. Entregar la dirección creativa: objetivo, template de Canva, texto por placa, indicaciones visuales, assets recomendados y CTA. El equipo de DOOH duplica y completa el Brand Template correspondiente; registra en la grilla el enlace al diseño y exporta los entregables desde allí.
 5. Ejecutar QA de marca: tono, repetición, categoría habilitada, ajuste de texto y alcance de la información.
@@ -130,7 +142,7 @@ Las fechas especiales, lanzamientos y semanas sin publicación se cargan antes d
 | Control editorial | Google Sheet vinculado a la tanda, cuando se habilite el circuito compartido. |
 | Responsables de aprobación | `florencia@dooh.com.ar`, `fernanda@dooh.com.ar` y `hello@dooh.com.ar`. |
 | Regla de aprobación | El `Aprobado` de cualquiera de los tres responsables es suficiente para validar copy y gráfica. No programa ni publica por sí solo. |
-| Entrega | Grilla, caption bilingüe, archivos finales y resultado del QA por pieza. |
+| Entrega | Calendario y borrador de nota, grilla, caption bilingüe, archivos finales y resultado del QA por pieza. |
 
 Las piezas `[REVISAR]` deben quedar destacadas en el Sheet. Ningún agente corrige, aprueba ni descarta automáticamente una pieza.
 
@@ -154,6 +166,7 @@ El escenario de Make revisará la grilla periódicamente y solo procesará filas
 ## 7. Guardrails
 
 - No publicar sin aprobación humana explícita en Google Sheet, asset final, fecha/hora y `Programar publicación = Sí`.
+- No publicar una nota de blog sin aprobación editorial explícita, autorización de cualquier información de clientes incluida y URL/metadata revisadas.
 - No usar información, assets ni referencias de clientes de DOOH sin autorización para la pieza específica.
 - No crear ni editar templates de Canva fuera de los campos permitidos.
 - No entregar ni cargar como final una gráfica compuesta fuera del Brand Template de Canva correspondiente.

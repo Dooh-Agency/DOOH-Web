@@ -8,6 +8,8 @@ La carga principal se realiza en el [Formulario de inputs](https://docs.google.c
 - qué información está aprobada para comunicar;
 - restricciones, fecha límite y canal sugerido, si existen.
 
+Para una propuesta de nota de blog, agregar además el problema o pregunta que resolverá, audiencia, fuentes disponibles, proyecto o experiencia de DOOH que la respalda y autorización explícita si menciona a un cliente. No se generan notas a partir de tendencias sin un aporte propio o información verificable.
+
 También se aceptan inputs informados directamente al equipo de automatización. Antes de generar contenido, se registran en la grilla de la semana correspondiente. Cada tema seleccionado se planifica como una pieza principal y una story de Instagram asociada para el día siguiente. Usar una subcarpeta por tanda o tema, por ejemplo `2026-08-31-proyecto-muud/` o `2026-08-31-news-ia/`.
 
 No reutilizar material de clientes para contenido de DOOH sin autorización explícita.

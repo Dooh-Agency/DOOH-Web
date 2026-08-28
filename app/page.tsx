@@ -41,6 +41,7 @@ export default function Home() {
         <nav aria-label="Navegación principal" className="hidden md:flex items-center gap-8">
           <a href="#servicios"    className="text-sm text-dooh-gray-mid hover:text-dooh-white transition-colors">Servicios</a>
           <a href="#proyectos"    className="text-sm text-dooh-gray-mid hover:text-dooh-white transition-colors">Proyectos</a>
+          <a href="/blog"          className="text-sm text-dooh-gray-mid hover:text-dooh-white transition-colors">Blog</a>
           <a href="#nosotros"     className="text-sm text-dooh-gray-mid hover:text-dooh-white transition-colors">Nosotros</a>
           <a href="#contacto"     className="text-sm text-dooh-gray-mid hover:text-dooh-white transition-colors">Contacto</a>
         </nav>
