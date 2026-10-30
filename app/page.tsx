@@ -692,9 +692,7 @@ export default function Home() {
           <form
             name="contacto-dooh"
             method="POST"
-            action="/gracias"
-            data-netlify="true"
-            data-netlify-honeypot="bot-field"
+            action="/api/contact"
             className="form-fields flex flex-col gap-4"
           >
             <input type="hidden" name="form-name" value="contacto-dooh" />

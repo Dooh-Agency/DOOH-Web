@@ -35,9 +35,9 @@ Estas pautas son independientes de la herramienta: aplican a Codex, Claude Code,
 
 ## Formulario y publicación
 
-- El formulario se llama `contacto-dooh` y usa Netlify Forms.
-- Conservar `name`, `method="POST"`, `data-netlify`, `form-name` y el honeypot para no romper la captación.
-- La notificación a `hello@dooh.com.ar` se configura en Netlify, nunca en código.
+- El formulario se llama `contacto-dooh` y usa una Cloudflare Pages Function con Resend.
+- Conservar `name`, `method="POST"`, `action="/api/contact"`, `form-name` y el honeypot para no romper la captación.
+- La notificación, remitente y clave de Resend se configuran como secretos en Cloudflare; nunca en código.
 - Antes de publicar, ejecutar `npm run build` y probar un envío real en el deploy de preview.
 
 ## Verificación y Git

@@ -22,8 +22,9 @@ Abrí `http://localhost:3000` en el navegador.
 | --- | --- |
 | `npm run dev` | Inicia el entorno local. |
 | `npm run build` | Genera y valida el build de producción. |
-| `npm run start` | Sirve el build de producción. |
 | `npm run lint` | Ejecuta el linter configurado por Next.js. |
+
+El resultado estático queda en `out/`; Cloudflare Pages lo sirve en producción.
 
 Antes de entregar cambios, ejecutar como mínimo:
 
@@ -55,17 +56,23 @@ Lineamientos esenciales actuales:
 
 ## Formularios y despliegue
 
-El formulario de contacto usa Netlify Forms. Al publicar en Netlify, configurar una notificación de envíos a `hello@dooh.com.ar` desde **Forms → Form notifications** en el panel del sitio. La detección se realiza durante el deploy.
+El sitio se publica como exportación estática en Cloudflare Pages. El formulario de contacto usa la Pages Function `functions/api/contact.ts`, que envía los mensajes mediante Resend.
 
 Para un primer despliegue:
 
-1. Importar este repositorio en Netlify.
-2. Usar `npm run build` como comando de build; Netlify detecta Next.js automáticamente.
-3. Publicar una vista previa y probar formulario, navegación móvil y galería.
-4. Configurar la notificación a `hello@dooh.com.ar`.
-5. Conectar el dominio y verificar DNS antes de redirigir el sitio anterior de Wix.
+1. En **Cloudflare → Workers & Pages**, crear un proyecto de Pages e importar el repositorio `Dooh-Agency/DOOH-Web`.
+2. Configurar **Build command** como `npm run build` y **Build output directory** como `out`.
+3. En **Settings → Variables and Secrets**, crear estas variables para Production y Preview:
+   - `RESEND_API_KEY`: clave API de Resend.
+   - `RESEND_FROM_EMAIL`: remitente validado en Resend, por ejemplo `DOOH <contacto@dooh.com.ar>`.
+   - `CONTACT_RECIPIENT`: buzón que recibe los contactos, por ejemplo `hello@dooh.com.ar`.
+   - `ALLOWED_CONTACT_ORIGIN`: URL pública exacta, por ejemplo `https://www.dooh.com.ar`. En Preview puede dejarse vacía o reemplazarse por la URL del preview que se va a probar.
+4. En Resend, verificar el dominio de envío siguiendo los registros DNS que indique su panel.
+5. Publicar una vista previa y probar formulario, navegación móvil y galería.
+6. Conectar el dominio desde **Custom domains** y verificar DNS antes de redirigir el sitio anterior de Wix. Para el dominio raíz, delegar los nameservers a Cloudflare.
+7. Cuando el dominio productivo quede activo, cambiar `NEXT_PUBLIC_SITE_URL` y `ALLOWED_CONTACT_ORIGIN` a `https://www.dooh.com.ar`.
 
-No guardar contraseñas, claves API ni credenciales en Git. Si una integración las requiere, usar variables de entorno en Netlify y documentar únicamente sus nombres en `.env.example`.
+No guardar contraseñas, claves API ni credenciales en Git. Las claves se cargan como secretos en Cloudflare y `.env.example` sólo declara sus nombres.
 
 ## Trabajo asistido por IA
 

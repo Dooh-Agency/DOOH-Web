@@ -18,9 +18,9 @@ Esta carpeta contiene el esquema de la herramienta interna. El sitio público no
 4. En **Authentication → Providers → Email**, activar el acceso por Magic Link. La lista permitida se controla en `public.team_members`, no en el cliente.
 5. Copiar la Project URL y la Publishable key en `.env.local` usando los nombres de `.env.example`. No cargar esas variables todavía en Wix.
 
-Cuando el nuevo sitio esté publicado en una URL de preview de Netlify, agregar esa URL seguida de `/planificador-redes` a Redirect URLs. Recién después de migrar el dominio de Wix, cambiar Site URL a `https://www.dooh.com.ar` y agregar `https://www.dooh.com.ar/planificador-redes`.
+Cuando el nuevo sitio esté publicado en una URL de preview de Cloudflare Pages, agregar esa URL seguida de `/planificador-redes` a Redirect URLs. Recién después de migrar el dominio de Wix, cambiar Site URL a `https://www.dooh.com.ar` y agregar `https://www.dooh.com.ar/planificador-redes`.
 
-No usar `service_role` en el navegador, en `.env.example` ni en Netlify para esta interfaz.
+No usar `service_role` en el navegador, en `.env.example` ni en Cloudflare para esta interfaz.
 
 ## Acceso del equipo
 
