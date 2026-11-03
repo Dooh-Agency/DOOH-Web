@@ -30,12 +30,21 @@ Los originales permanecen en Drive y se conserva su referencia, pero la previsua
    - `SUPABASE_SERVICE_ROLE_KEY` → la clave `service_role` de Supabase, en **Project Settings → API Keys**.
 
    Esta clave omite RLS para ejecutar la sincronización. Nunca copiarla en el sitio, en `.env.local`, en Git ni en un mensaje de chat.
+
+   Opcional: `DRIVE_ASSETS_FOLDER_ID` → el ID de la carpeta de Drive donde se crearán las carpetas de cada pieza. Si no se define, el script crea (o reutiliza) una carpeta `Assets finales` junto a la planilla y guarda su ID automáticamente.
 5. Volver a la grilla. En el menú nuevo **Planificador DOOH → Sincronizar con Supabase**, aceptar los permisos solicitados por Google.
 
 Al finalizar aparece un resumen de piezas y assets. Para MUUD 01 debería indicar cuatro assets con el estado actual de la carpeta. La carpeta compartida que revisamos hoy contiene 4 archivos (`1` a `4`); cuando se agregue la quinta placa, la siguiente sincronización la incorporará automáticamente.
 
 ## Operación
 
-Cada vez que se edite un copy, una aprobación o una carpeta final, ejecutar el menú **Sincronizar con Supabase**. Más adelante se puede añadir un disparador horario desde Apps Script si el equipo lo necesita; no conviene sincronizar por cada edición mientras la grilla está en trabajo.
+1. Cargar la pieza en la grilla con, al menos, `Pieza` y `Tema`.
+2. Ejecutar **Planificador DOOH → Crear carpetas de assets** (o directamente **Sincronizar con Supabase**, que también las crea). Cada pieza sin link en `Assets finales (Drive)` recibe una carpeta `01-IG · Tema` y su link queda escrito en la columna. Nunca se reemplaza un link cargado a mano.
+3. Exportar la pieza desde Canva y soltar los archivos en esa carpeta, numerados `1`, `2`, `3`… para fijar el orden del carrusel.
+4. Sincronizar.
+
+Cada vez que se edite un copy, una aprobación o una carpeta final, ejecutar **Sincronizar con Supabase**, o bien activar **Activar sincronización cada hora** para que corra sola. Las ejecuciones horarias no muestran un aviso: su resumen y sus errores quedan en **Apps Script → Ejecuciones**, y Google envía un correo si alguna falla. Para pausarla, usar **Desactivar sincronización cada hora**.
+
+Si una carpeta se renombra o se borra el link de la columna, la siguiente ejecución reutiliza la carpeta que tenga exactamente el nombre `Pieza · Tema`, o crea una nueva si el tema cambió.
 
 El planificador lee estas tablas de Supabase. Después de una sincronización, usar **Actualizar** en `/planificador-redes` para recargar los cambios.

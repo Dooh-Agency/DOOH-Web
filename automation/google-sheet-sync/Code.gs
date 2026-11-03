@@ -5,20 +5,27 @@
  * Las claves quedan sólo en Script Properties de Google Apps Script.
  */
 
-// Versión actual: admite un cover explícito para previsualizar videos sin depender de su primer fotograma.
-const PLANNER_SYNC_VERSION = '2026.08.27.4';
+// Versión actual: crea una carpeta de Drive por pieza y admite sincronización horaria.
+const PLANNER_SYNC_VERSION = '2026.11.03.1';
 
 const PLANNER_CONFIG = {
   sheetName: 'Grilla semanal',
   headerRow: 4,
   supabaseTable: 'content_items',
   assetsTable: 'content_item_assets',
+  assetsHeader: 'Assets finales (Drive)',
+  // Se usa sólo si no existe DRIVE_ASSETS_FOLDER_ID: se crea junto a la planilla.
+  defaultAssetsFolderName: 'Assets finales',
 };
 
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('Planificador DOOH')
     .addItem('Sincronizar con Supabase', 'syncPlanner')
+    .addItem('Crear carpetas de assets', 'createAssetFolders')
+    .addSeparator()
+    .addItem('Activar sincronización cada hora', 'enableHourlySync')
+    .addItem('Desactivar sincronización cada hora', 'disableHourlySync')
     .addToUi();
 }
 
@@ -31,15 +38,12 @@ function syncPlanner() {
     throw new Error('Faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en Script Properties. Ver SETUP.md.');
   }
 
-  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = spreadsheet.getSheetByName(PLANNER_CONFIG.sheetName);
-  if (!sheet) {
-    throw new Error(`No se encontró la hoja “${PLANNER_CONFIG.sheetName}”.`);
+  const grid = readGrid_();
+  if (!grid) {
+    notify_('No hay piezas para sincronizar.');
+    return;
   }
-
-  const lastColumn = sheet.getLastColumn();
-  const headers = sheet.getRange(PLANNER_CONFIG.headerRow, 1, 1, lastColumn).getDisplayValues()[0];
-  const headerIndex = indexHeaders_(headers);
+  const { spreadsheet, sheet, headerIndex, rawRows } = grid;
   const requiredHeaders = ['Pieza', 'Canal', 'Formato', 'Objetivo', 'Tema', 'Copy ES', 'Copy EN', 'Dirección visual', 'Estado'];
   requiredHeaders.forEach((header) => {
     if (headerIndex[header] === undefined) {
@@ -47,17 +51,8 @@ function syncPlanner() {
     }
   });
 
-  const lastRow = sheet.getLastRow();
-  if (lastRow <= PLANNER_CONFIG.headerRow) {
-    SpreadsheetApp.getUi().alert('No hay piezas para sincronizar.');
-    return;
-  }
-
-  const rawRows = sheet
-    .getRange(PLANNER_CONFIG.headerRow + 1, 1, lastRow - PLANNER_CONFIG.headerRow, lastColumn)
-    .getValues();
-
-  const report = { createdOrUpdated: 0, assets: 0, previews: 0, skipped: 0, errors: [] };
+  const folders = ensureAssetFolders_(sheet, headerIndex, rawRows);
+  const report = { createdOrUpdated: 0, assets: 0, previews: 0, skipped: 0, errors: folders.errors.slice() };
 
   rawRows.forEach((row, offset) => {
     const rowNumber = PLANNER_CONFIG.headerRow + 1 + offset;
@@ -88,6 +83,7 @@ function syncPlanner() {
 
   const message = [
     `Piezas sincronizadas: ${report.createdOrUpdated}`,
+    `Carpetas nuevas: ${folders.created}`,
     `Assets encontrados: ${report.assets}`,
     `Covers sincronizados: ${report.previews}`,
     `Filas sin pieza o tema: ${report.skipped}`,
@@ -95,7 +91,119 @@ function syncPlanner() {
   if (report.errors.length) {
     message.push('', `Errores (${report.errors.length}):`, report.errors.slice(0, 8).join('\n'));
   }
-  SpreadsheetApp.getUi().alert('Planificador DOOH', message.join('\n'), SpreadsheetApp.getUi().ButtonSet.OK);
+  notify_(message.join('\n'));
+}
+
+function createAssetFolders() {
+  const grid = readGrid_();
+  if (!grid) {
+    notify_('No hay piezas en la grilla.');
+    return;
+  }
+  const result = ensureAssetFolders_(grid.sheet, grid.headerIndex, grid.rawRows);
+  const message = [`Carpetas nuevas: ${result.created}`];
+  if (result.errors.length) {
+    message.push('', `Errores (${result.errors.length}):`, result.errors.slice(0, 8).join('\n'));
+  }
+  notify_(message.join('\n'));
+}
+
+function enableHourlySync() {
+  removeSyncTriggers_();
+  ScriptApp.newTrigger('syncPlanner').timeBased().everyHours(1).create();
+  notify_('Sincronización cada hora activada. Para pausarla, usá “Desactivar sincronización cada hora”.');
+}
+
+function disableHourlySync() {
+  const removed = removeSyncTriggers_();
+  notify_(removed ? 'Sincronización cada hora desactivada.' : 'No había una sincronización horaria activa.');
+}
+
+function removeSyncTriggers_() {
+  const triggers = ScriptApp.getProjectTriggers().filter((trigger) => trigger.getHandlerFunction() === 'syncPlanner');
+  triggers.forEach((trigger) => ScriptApp.deleteTrigger(trigger));
+  return triggers.length;
+}
+
+function readGrid_() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = spreadsheet.getSheetByName(PLANNER_CONFIG.sheetName);
+  if (!sheet) {
+    throw new Error(`No se encontró la hoja “${PLANNER_CONFIG.sheetName}”.`);
+  }
+
+  const lastColumn = sheet.getLastColumn();
+  const headers = sheet.getRange(PLANNER_CONFIG.headerRow, 1, 1, lastColumn).getDisplayValues()[0];
+  const headerIndex = indexHeaders_(headers);
+
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= PLANNER_CONFIG.headerRow) return null;
+
+  const rawRows = sheet
+    .getRange(PLANNER_CONFIG.headerRow + 1, 1, lastRow - PLANNER_CONFIG.headerRow, lastColumn)
+    .getValues();
+  return { spreadsheet, sheet, headerIndex, rawRows };
+}
+
+/**
+ * Crea una carpeta de Drive por pieza (“01-IG · Tema”) y escribe su link en
+ * “Assets finales (Drive)”. Nunca reemplaza un link existente; si la carpeta ya
+ * existe con ese nombre, la reutiliza para no duplicarla.
+ */
+function ensureAssetFolders_(sheet, headerIndex, rawRows) {
+  const result = { created: 0, errors: [] };
+  const column = headerIndex[PLANNER_CONFIG.assetsHeader];
+  if (column === undefined) {
+    result.errors.push(`Falta el encabezado “${PLANNER_CONFIG.assetsHeader}”: no se crearon carpetas.`);
+    return result;
+  }
+
+  let root = null;
+  rawRows.forEach((row, offset) => {
+    const piece = value_(row, headerIndex, 'Pieza');
+    const title = value_(row, headerIndex, 'Tema');
+    if (!piece || !title || value_(row, headerIndex, PLANNER_CONFIG.assetsHeader)) return;
+
+    const rowNumber = PLANNER_CONFIG.headerRow + 1 + offset;
+    try {
+      root = root || assetsRootFolder_(sheet.getParent());
+      const name = `${piece} · ${title}`;
+      const existing = root.getFoldersByName(name);
+      const reused = existing.hasNext();
+      const folder = reused ? existing.next() : root.createFolder(name);
+      if (!reused) result.created += 1;
+
+      const url = folder.getUrl();
+      sheet.getRange(rowNumber, column + 1).setValue(url);
+      row[column] = url;
+    } catch (error) {
+      result.errors.push(`Fila ${rowNumber}: no se pudo crear la carpeta (${error.message})`);
+    }
+  });
+  return result;
+}
+
+function assetsRootFolder_(spreadsheet) {
+  const properties = PropertiesService.getScriptProperties();
+  const configuredId = properties.getProperty('DRIVE_ASSETS_FOLDER_ID');
+  if (configuredId) return DriveApp.getFolderById(configuredId);
+
+  const parents = DriveApp.getFileById(spreadsheet.getId()).getParents();
+  const parent = parents.hasNext() ? parents.next() : DriveApp.getRootFolder();
+  const existing = parent.getFoldersByName(PLANNER_CONFIG.defaultAssetsFolderName);
+  const folder = existing.hasNext() ? existing.next() : parent.createFolder(PLANNER_CONFIG.defaultAssetsFolderName);
+  properties.setProperty('DRIVE_ASSETS_FOLDER_ID', folder.getId());
+  return folder;
+}
+
+// En una ejecución programada no hay interfaz: el resumen queda en el registro de ejecuciones.
+function notify_(message) {
+  try {
+    const ui = SpreadsheetApp.getUi();
+    ui.alert('Planificador DOOH', message, ui.ButtonSet.OK);
+  } catch (error) {
+    console.log(message);
+  }
 }
 
 function upsertContentItem_(supabaseUrl, serviceRoleKey, sourceKey, row, headerIndex, rowNumber) {
