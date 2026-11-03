@@ -5,8 +5,8 @@
  * Las claves quedan sólo en Script Properties de Google Apps Script.
  */
 
-// Versión actual: crea una carpeta de Drive por pieza y admite sincronización horaria.
-const PLANNER_SYNC_VERSION = '2026.11.03.1';
+// Versión actual: importa tandas preparadas en Drive y crea una carpeta por pieza.
+const PLANNER_SYNC_VERSION = '2026.11.03.5';
 
 const PLANNER_CONFIG = {
   sheetName: 'Grilla semanal',
@@ -16,11 +16,15 @@ const PLANNER_CONFIG = {
   assetsHeader: 'Assets finales (Drive)',
   // Se usa sólo si no existe DRIVE_ASSETS_FOLDER_ID: se crea junto a la planilla.
   defaultAssetsFolderName: 'Assets finales',
+  // Se usa sólo si no existe TANDAS_FOLDER_ID: se crea junto a la planilla.
+  defaultBatchesFolderName: 'Tandas para importar',
+  importedPrefix: '✓ Importada · ',
 };
 
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('Planificador DOOH')
+    .addItem('Importar tanda nueva', 'importBatches')
     .addItem('Sincronizar con Supabase', 'syncPlanner')
     .addItem('Crear carpetas de assets', 'createAssetFolders')
     .addSeparator()
@@ -108,6 +112,85 @@ function createAssetFolders() {
   notify_(message.join('\n'));
 }
 
+/**
+ * Agrega a la grilla las tandas preparadas como CSV (UTF-8) en “Tandas para importar”.
+ * Se leen como texto sin convertir, para que Drive no transforme valores como
+ * “Lunes 09/11” en fechas. Las columnas se emparejan por nombre de encabezado
+ * (fila 1 de la tanda); las que no existen en la grilla se ignoran. Cada tanda
+ * importada se renombra con “✓ Importada · ” para no volver a cargarla.
+ */
+function importBatches() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = spreadsheet.getSheetByName(PLANNER_CONFIG.sheetName);
+  if (!sheet) {
+    throw new Error(`No se encontró la hoja “${PLANNER_CONFIG.sheetName}”.`);
+  }
+  const lastColumn = sheet.getLastColumn();
+  const headerIndex = indexHeaders_(sheet.getRange(PLANNER_CONFIG.headerRow, 1, 1, lastColumn).getDisplayValues()[0]);
+
+  const folder = namedFolder_(spreadsheet, 'TANDAS_FOLDER_ID', PLANNER_CONFIG.defaultBatchesFolderName);
+  const files = folder.getFilesByType(MimeType.CSV);
+  const report = { batches: [], rows: 0, errors: [] };
+
+  while (files.hasNext()) {
+    const file = files.next();
+    const name = file.getName();
+    if (name.indexOf(PLANNER_CONFIG.importedPrefix) === 0) continue;
+
+    let destination = null;
+    try {
+      const values = Utilities.parseCsv(file.getBlob().getDataAsString('UTF-8'));
+      const sourceHeaders = values[0].map((header) => String(header).trim());
+      const rows = values.slice(1)
+        .filter((row) => row.some((cell) => String(cell).trim() !== ''))
+        .map((row) => {
+          const target = new Array(lastColumn).fill('');
+          sourceHeaders.forEach((header, index) => {
+            if (headerIndex[header] !== undefined) target[headerIndex[header]] = row[index];
+          });
+          return target;
+        });
+      if (!rows.length) throw new Error('no tiene filas con datos');
+
+      const firstRow = sheet.getLastRow() + 1;
+      destination = sheet.getRange(firstRow, 1, rows.length, lastColumn);
+      const model = sheet.getRange(PLANNER_CONFIG.headerRow + 1, 1, 1, lastColumn);
+      model.copyTo(destination, SpreadsheetApp.CopyPasteType.PASTE_FORMAT, false);
+      // Texto plano para que Sheets no convierta “Lunes 09/11” en fecha; sólo
+      // “Fecha/hora salida” conserva el formato de fecha de la grilla.
+      destination.setNumberFormat('@');
+      const dateColumn = headerIndex['Fecha/hora salida'];
+      if (dateColumn !== undefined) {
+        sheet.getRange(firstRow, dateColumn + 1, rows.length, 1)
+          .setNumberFormat(model.getCell(1, dateColumn + 1).getNumberFormat());
+      }
+      // Valores antes que validaciones: así un valor fuera de la lista queda
+      // marcado en la celda en lugar de cortar la importación.
+      destination.setValues(rows);
+      model.copyTo(destination, SpreadsheetApp.CopyPasteType.PASTE_DATA_VALIDATION, false);
+      // Confirma la escritura antes de marcar la tanda como importada.
+      SpreadsheetApp.flush();
+
+      file.setName(`${PLANNER_CONFIG.importedPrefix}${name}`);
+      report.batches.push(`${name} (${rows.length} filas)`);
+      report.rows += rows.length;
+    } catch (error) {
+      if (destination) destination.clear();
+      report.errors.push(`${name}: ${error.message}`);
+    }
+  }
+
+  const folders = report.rows ? ensureAssetFolders_(sheet, headerIndex, readGrid_().rawRows) : { created: 0, errors: [] };
+  const message = report.batches.length
+    ? [`Tandas importadas: ${report.batches.length}`, report.batches.join('\n'), '', `Carpetas nuevas: ${folders.created}`]
+    : ['No hay tandas nuevas en “Tandas para importar”.'];
+  const errors = report.errors.concat(folders.errors);
+  if (errors.length) {
+    message.push('', `Errores (${errors.length}):`, errors.slice(0, 8).join('\n'));
+  }
+  notify_(message.join('\n'));
+}
+
 function enableHourlySync() {
   removeSyncTriggers_();
   ScriptApp.newTrigger('syncPlanner').timeBased().everyHours(1).create();
@@ -166,7 +249,7 @@ function ensureAssetFolders_(sheet, headerIndex, rawRows) {
 
     const rowNumber = PLANNER_CONFIG.headerRow + 1 + offset;
     try {
-      root = root || assetsRootFolder_(sheet.getParent());
+      root = root || namedFolder_(sheet.getParent(), 'DRIVE_ASSETS_FOLDER_ID', PLANNER_CONFIG.defaultAssetsFolderName);
       const name = `${piece} · ${title}`;
       const existing = root.getFoldersByName(name);
       const reused = existing.hasNext();
@@ -183,16 +266,18 @@ function ensureAssetFolders_(sheet, headerIndex, rawRows) {
   return result;
 }
 
-function assetsRootFolder_(spreadsheet) {
+// Devuelve la carpeta configurada en `propertyName` o crea (o reutiliza) `defaultName`
+// junto a la planilla y guarda su ID para las próximas ejecuciones.
+function namedFolder_(spreadsheet, propertyName, defaultName) {
   const properties = PropertiesService.getScriptProperties();
-  const configuredId = properties.getProperty('DRIVE_ASSETS_FOLDER_ID');
+  const configuredId = properties.getProperty(propertyName);
   if (configuredId) return DriveApp.getFolderById(configuredId);
 
   const parents = DriveApp.getFileById(spreadsheet.getId()).getParents();
   const parent = parents.hasNext() ? parents.next() : DriveApp.getRootFolder();
-  const existing = parent.getFoldersByName(PLANNER_CONFIG.defaultAssetsFolderName);
-  const folder = existing.hasNext() ? existing.next() : parent.createFolder(PLANNER_CONFIG.defaultAssetsFolderName);
-  properties.setProperty('DRIVE_ASSETS_FOLDER_ID', folder.getId());
+  const existing = parent.getFoldersByName(defaultName);
+  const folder = existing.hasNext() ? existing.next() : parent.createFolder(defaultName);
+  properties.setProperty(propertyName, folder.getId());
   return folder;
 }
 

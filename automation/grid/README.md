@@ -1,5 +1,7 @@
 # Tandas de contenido
 
+La grilla de Google Sheets es fija y acumula todas las semanas. Para pedirle una tanda al asistente, seguir [`TANDA_SEMANAL.md`](TANDA_SEMANAL.md).
+
 Crear una carpeta por tanda con el formato `YYYY-MM-DD` (lunes de generación). Ejemplo:
 
 ```text
