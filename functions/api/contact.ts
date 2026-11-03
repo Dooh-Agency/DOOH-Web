@@ -73,10 +73,12 @@ export async function onRequestPost(context: { request: Request; env: Env }) {
   }
 
   const safeName = fields.nombre.replace(/[\r\n]/g, " ");
+  // Tolera espacios o saltos de línea pegados junto con la clave en Cloudflare.
+  const apiKey = env.RESEND_API_KEY.trim();
   const emailResponse = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${env.RESEND_API_KEY}`,
+      Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -103,8 +105,13 @@ export async function onRequestPost(context: { request: Request; env: Env }) {
 
   if (!emailResponse.ok) {
     // Visible en Cloudflare → Workers & Pages → dooh-web → Functions → Real-time logs.
-    // No incluye datos de la consulta: solo el código y el motivo que devuelve Resend.
-    console.error(`Resend rechazó el envío (${emailResponse.status}): ${(await emailResponse.text()).slice(0, 300)}`);
+    // No incluye datos de la consulta ni la clave: solo el código, el motivo que
+    // devuelve Resend y el formato de la clave (largo y prefijo) para detectar
+    // si se guardó incompleta.
+    console.error(
+      `Resend rechazó el envío (${emailResponse.status}): ${(await emailResponse.text()).slice(0, 300)}` +
+        ` · clave: ${apiKey.length} caracteres, empieza con "re_": ${apiKey.startsWith("re_")}`,
+    );
     return redirect(request, "/contacto-error");
   }
 
