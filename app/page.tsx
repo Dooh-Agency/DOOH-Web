@@ -678,7 +678,7 @@ export default function Home() {
                 inline-flex items-center gap-3
                 border border-dooh-dark/20 text-dooh-dark
                 text-sm px-6 py-3.5 rounded-full
-                hover:border-dooh-lime/50 hover:text-dooh-lime transition-colors
+                hover:border-dooh-dark hover:bg-dooh-dark hover:text-dooh-white transition-colors
               "
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
@@ -784,6 +784,19 @@ export default function Home() {
               />
             </div>
 
+            <label className="flex items-start gap-3 text-xs text-dooh-dark/60 leading-relaxed">
+              <input
+                type="checkbox"
+                name="privacidad"
+                required
+                className="mt-0.5 h-4 w-4 shrink-0 accent-dooh-dark"
+              />
+              <span>
+                Leí y acepto la{" "}
+                <a href="/privacidad" target="_blank" className="underline hover:text-dooh-dark">política de privacidad</a>.
+              </span>
+            </label>
+
             <button
               type="submit"
               className="
@@ -798,8 +811,12 @@ export default function Home() {
                 <path d="M1 7h12M8 3l5 4-5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
+            {/* Primera capa informativa exigida por el RGPD (art. 13) y la Ley 25.326 (art. 6). */}
             <p className="text-xs text-dooh-dark/45 leading-relaxed">
-              Usaremos tus datos únicamente para responder esta consulta.
+              Responsable: DOOH Agency. Finalidad: responder tu consulta. Legitimación: tu consentimiento.
+              Destinatarios: proveedores de correo y hosting que nos prestan servicio; no cedemos tus datos.
+              Podés acceder, rectificar o suprimir tus datos escribiendo a hello@dooh.com.ar. Más información en la{" "}
+              <a href="/privacidad" className="underline hover:text-dooh-dark">política de privacidad</a>.
             </p>
           </form>
 
@@ -829,6 +846,7 @@ export default function Home() {
               {[
                 { label: "Servicios",  href: "#servicios" },
                 { label: "Proyectos", href: "#proyectos" },
+                { label: "Blog",      href: "/blog" },
                 { label: "Nosotros",  href: "#nosotros" },
                 { label: "Contacto",  href: "#contacto" },
               ].map(l => (
@@ -842,9 +860,9 @@ export default function Home() {
             <div className="flex flex-col gap-2">
               <p className="text-[10px] text-dooh-gray-mid/40 tracking-widest uppercase mb-1">Redes</p>
               {[
-                { label: "Instagram", href: "https://instagram.com" },
-                { label: "LinkedIn",  href: "https://linkedin.com" },
-                { label: "Behance",   href: "https://behance.net" },
+                { label: "Instagram", href: "https://www.instagram.com/dooh.agency/" },
+                { label: "LinkedIn",  href: "https://www.linkedin.com/company/dooh-agency/" },
+                { label: "Facebook",  href: "https://www.facebook.com/doohagency/" },
               ].map(l => (
                 <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer" className="text-sm text-dooh-gray-mid hover:text-dooh-white transition-colors">
                   {l.label}
@@ -868,7 +886,10 @@ export default function Home() {
 
           <div className="pt-6 border-t border-white/[0.06] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <Logo className="h-3.5 w-auto text-dooh-white/40" />
-            <p className="text-xs text-dooh-gray-mid/30">© 2026 DOOH Agency. Todos los derechos reservados.</p>
+            <p className="text-xs text-dooh-gray-mid/30">
+              © 2026 DOOH Agency. Todos los derechos reservados. ·{" "}
+              <a href="/privacidad" className="hover:text-dooh-white transition-colors">Política de privacidad</a>
+            </p>
           </div>
 
         </div>

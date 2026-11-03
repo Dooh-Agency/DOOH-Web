@@ -3,6 +3,7 @@ import { Nunito_Sans } from "next/font/google";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { Animations }   from "@/components/Animations";
 import { PlannerAuthRedirect } from "@/components/PlannerAuthRedirect";
+import { siteUrl } from "@/lib/site";
 import "./globals.css";
 
 const nunitoSans = Nunito_Sans({
@@ -13,6 +14,7 @@ const nunitoSans = Nunito_Sans({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "DOOH Agency — Creative Tech Studio | Buenos Aires & Málaga",
   description:
     "Agencia creativa que combina diseño, estrategia e inteligencia artificial para construir marcas con propósito.",
@@ -21,6 +23,7 @@ export const metadata: Metadata = {
     description: "Diseño, estrategia e inteligencia artificial para marcas con propósito.",
     locale: "es_AR",
     type: "website",
+    siteName: "DOOH Agency",
   },
 };
 

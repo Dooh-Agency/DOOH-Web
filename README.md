@@ -56,13 +56,13 @@ Lineamientos esenciales actuales:
 
 ## Formularios y despliegue
 
-El sitio se publica como exportación estática en Cloudflare Pages. El formulario de contacto usa la Pages Function `functions/api/contact.ts`, que envía los mensajes mediante Resend.
+El sitio se publica como exportación estática en Cloudflare Pages. El formulario de contacto usa la Pages Function `functions/api/contact.ts`, que envía los mensajes mediante Resend. Las redirecciones desde Wix están en `public/_redirects` y los encabezados HTTP en `public/_headers`.
 
-Para un primer despliegue:
+La guía completa de puesta en producción, con todas las variables, Resend, la migración del dominio y la lista de pruebas, está en [`docs/deploy/CLOUDFLARE.md`](docs/deploy/CLOUDFLARE.md). Resumen para un primer despliegue:
 
 1. En **Cloudflare → Workers & Pages**, crear un proyecto de Pages e importar el repositorio `Dooh-Agency/DOOH-Web`.
 2. Configurar **Build command** como `npm run build` y **Build output directory** como `out`.
-3. En **Settings → Variables and Secrets**, crear estas variables para Production y Preview:
+3. En **Settings → Variables and Secrets**, crear `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (se leen al compilar) y estas variables para Production y Preview:
    - `RESEND_API_KEY`: clave API de Resend.
    - `RESEND_FROM_EMAIL`: remitente validado en Resend, por ejemplo `DOOH <contacto@dooh.com.ar>`.
    - `CONTACT_RECIPIENT`: buzón que recibe los contactos, por ejemplo `hello@dooh.com.ar`.

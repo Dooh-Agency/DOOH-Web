@@ -1,1 +1,22 @@
+# Redirecciones permanentes desde el sitio anterior en Wix (Cloudflare Pages).
+
+# Notas del blog: mismos slugs que en Wix.
 /post/* /blog/:splat 301
+
+# Categorías del blog de Wix: el blog nuevo no las separa.
+/blog/categories/* /blog 301
+
+# Casos de Wix: rutas exactas para no tapar las imágenes de public/proyectos/.
+/proyectos/rvd.ai-rivadavia /#proyectos 301
+/proyectos/epicook-catering /#proyectos 301
+/proyectos/kapeluz /#proyectos 301
+/proyectos/mentora /#proyectos 301
+/proyectos/trotécnica-láser /#proyectos 301
+/proyectos/trot%C3%A9cnica-l%C3%A1ser /#proyectos 301
+/proyectos/deteik /#proyectos 301
+/proyectos/electroverse /#proyectos 301
+/proyectos/cashpoint /#proyectos 301
+/proyectos/kanso /#proyectos 301
+/proyectos/gopush /#proyectos 301
+/proyectos/fiduc-inversiones /#proyectos 301
+/proyectos/edumaia /#proyectos 301

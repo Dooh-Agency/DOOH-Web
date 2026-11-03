@@ -55,12 +55,14 @@ const projects: Project[] = [
   },
   {
     name: 'KANSO',
-    category: 'Identidad gastronómica · Vajilla',
-    description: 'Sistema de marca y comunicación para una propuesta gastronómica de autor.',
+    category: 'Branding · Redes · Web',
+    description: 'Diseño de marca, imagen corporativa, redes sociales y web para una marca de cerámica de autor.',
     background: '#111111', color: '#f7f7f7', size: 'aspect-[5/4]',
+    // Sólo piezas de agencia: marca, imagen corporativa, redes y web. Las fotos
+    // de producto (06 y 08) quedan fuera de la galería.
     images: [
-      { src: '/proyectos/clientes/kanso.png', alt: 'Proyecto KANSO: identidad gastronómica' },
-      ...galleryImages('kanso', 'KANSO', 9),
+      { src: '/proyectos/clientes/kanso.png', alt: 'Proyecto KANSO: packaging con la identidad de marca' },
+      ...galleryImages('kanso', 'KANSO', 9).filter((_, index) => index !== 5 && index !== 7),
     ],
   },
   {

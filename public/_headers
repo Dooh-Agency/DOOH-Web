@@ -1,0 +1,15 @@
+# Encabezados HTTP de Cloudflare Pages.
+
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
+
+# Archivos con hash del build: se pueden cachear sin vencimiento.
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Herramienta interna: fuera de buscadores.
+/planificador-redes*
+  X-Robots-Tag: noindex, nofollow
