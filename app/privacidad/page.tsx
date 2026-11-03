@@ -12,9 +12,9 @@ export const metadata: Metadata = {
 // Las líneas vacías no se muestran.
 const titular = {
   nombre: "DOOH Agency",
-  razonSocial: "",
-  documento: "", // CUIT (Argentina) y/o NIF (España)
-  domicilio: "",
+  razonSocial: "Florencia Alvarez",
+  documento: "CUIT 27-24128890-6", // CUIT (Argentina) y/o NIF (España)
+  domicilio: "Sargento Cabral 970, Acassuso, Provincia de Buenos Aires, Argentina",
   email: "hello@dooh.com.ar",
 };
 
