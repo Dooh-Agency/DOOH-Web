@@ -48,7 +48,12 @@ export async function onRequestPost(context: { request: Request; env: Env }) {
     return new Response("El formulario no está configurado.", { status: 503 });
   }
 
-  const formData = await request.formData();
+  let formData: FormData;
+  try {
+    formData = await request.formData();
+  } catch {
+    return redirect(request, "/contacto-error");
+  }
 
   // El honeypot sigue presente para descartar envíos automatizados sin
   // revelarles que fueron detectados.
@@ -96,7 +101,12 @@ export async function onRequestPost(context: { request: Request; env: Env }) {
     }),
   });
 
-  return emailResponse.ok
-    ? redirect(request, "/gracias")
-    : redirect(request, "/contacto-error");
+  if (!emailResponse.ok) {
+    // Visible en Cloudflare → Workers & Pages → dooh-web → Functions → Real-time logs.
+    // No incluye datos de la consulta: solo el código y el motivo que devuelve Resend.
+    console.error(`Resend rechazó el envío (${emailResponse.status}): ${(await emailResponse.text()).slice(0, 300)}`);
+    return redirect(request, "/contacto-error");
+  }
+
+  return redirect(request, "/gracias");
 }
