@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
-import { Nunito_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { Animations }   from "@/components/Animations";
 import { PlannerAuthRedirect } from "@/components/PlannerAuthRedirect";
 import { siteUrl } from "@/lib/site";
 import "./globals.css";
 
-const nunitoSans = Nunito_Sans({
-  subsets: ["latin"],
-  weight: ["200", "300", "400", "600", "800", "900"],
+// Nunito Sans variable (200–900, subconjunto latino) alojada en el repo: el build
+// no depende de descargar la fuente de Google Fonts.
+const nunitoSans = localFont({
+  src: "./fonts/NunitoSans-latin.woff2",
+  weight: "200 900",
   variable: "--font-nunito",
   display: "swap",
 });
