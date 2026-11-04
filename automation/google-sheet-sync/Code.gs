@@ -7,7 +7,7 @@
  */
 
 // Versión actual: sincroniza con Cloudflare en lugar de Supabase.
-const PLANNER_SYNC_VERSION = '2026.11.04.2';
+const PLANNER_SYNC_VERSION = '2026.11.04.3';
 
 const PLANNER_CONFIG = {
   sheetName: 'Grilla semanal',
@@ -24,7 +24,7 @@ const PLANNER_CONFIG = {
 // Acciones del planificador: valor que se escribe en “Estado” y etiqueta para “Observaciones”.
 const REVIEW_ACTIONS = {
   approve: { status: 'Aprobado', label: 'Aprobado' },
-  request_changes: { status: 'Revisar', label: 'Pedido de cambios' },
+  request_changes: { status: 'Cambios solicitados', label: 'Pedido de cambios' },
 };
 
 function onOpen() {
@@ -531,8 +531,8 @@ function normalizeStatus_(status) {
   const normalized = String(status).toLowerCase().trim();
   if (normalized === 'aprobado' || normalized === 'approved') return 'approved';
   if (normalized === 'en revisión' || normalized === 'en revision' || normalized === 'review') return 'review';
-  if (normalized === 'revisar' || normalized === 'changes_requested') return 'changes_requested';
-  if (normalized === 'rechazado' || normalized === 'rejected') return 'rejected';
+  if (normalized === 'cambios solicitados' || normalized === 'revisar' || normalized === 'changes_requested') return 'changes_requested';
+  if (normalized === 'descartado' || normalized === 'rechazado' || normalized === 'rejected') return 'rejected';
   if (normalized === 'programado' || normalized === 'scheduled') return 'scheduled';
   if (normalized === 'publicado' || normalized === 'published') return 'published';
   return 'draft';

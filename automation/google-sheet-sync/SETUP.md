@@ -87,7 +87,7 @@ En el planificador, **Actualizar** recarga lo último sincronizado.
 
 ### Aprobar y pedir cambios
 
-Cada pieza muestra qué le falta para salir (copy, gráfica, fecha, aprobación y programación), un botón para abrir el diseño en Canva si `Dirección visual` incluye el enlace, y los botones **Aprobar** y **Pedir cambios** (con comentario obligatorio). La decisión se escribe en la grilla: `Estado` pasa a `Aprobado` o `Revisar` y `Observaciones` suma una línea con fecha, email y comentario. La pieza se actualiza en el planificador en el momento. Aprobar no programa ni publica: `Programar publicación` se sigue marcando en la grilla.
+Cada pieza muestra qué le falta para salir (copy, gráfica, fecha, aprobación y programación), un botón para abrir el diseño en Canva si `Dirección visual` incluye el enlace, y los botones **Aprobar** y **Pedir cambios** (con comentario obligatorio). La decisión se escribe en la grilla: `Estado` pasa a `Aprobado` o `Cambios solicitados` (los valores de la lista desplegable de la grilla) y `Observaciones` suma una línea con fecha, email y comentario. La pieza se actualiza en el planificador en el momento. Aprobar no programa ni publica: `Programar publicación` se sigue marcando en la grilla.
 
 Si alguien inserta o mueve filas en la grilla, la acción se rechaza con el aviso “La grilla cambió desde la última sincronización”: sincronizar y volver a intentar. Así nunca se escribe sobre otra pieza.
 

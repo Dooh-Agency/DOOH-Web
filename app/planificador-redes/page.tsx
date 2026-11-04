@@ -38,7 +38,7 @@ type Item = {
 };
 
 const labels: Record<PlannerStatus, string> = {
-  draft: "Borrador", review: "En revisión", changes_requested: "Revisar", approved: "Aprobado", rejected: "Rechazado", scheduled: "Programado", published: "Publicado",
+  draft: "Borrador", review: "En revisión", changes_requested: "Cambios solicitados", approved: "Aprobado", rejected: "Descartado", scheduled: "Programado", published: "Publicado",
 };
 
 function story(item: Item) { return item.format.toLowerCase().includes("story"); }
