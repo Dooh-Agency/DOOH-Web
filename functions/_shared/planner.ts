@@ -52,7 +52,15 @@ export function error(message: string, status: number) {
 }
 
 // Comparación en tiempo constante para la clave de sincronización.
+// Clave compartida sin espacios ni saltos de línea: al pegarla en el panel de
+// Cloudflare puede quedar con el salto de línea final de `openssl rand`.
+export function syncSecret(env: Pick<PlannerEnv, "PLANNER_SYNC_SECRET">) {
+  return env.PLANNER_SYNC_SECRET?.trim() || undefined;
+}
+
 export function sameSecret(received: string | null, expected: string | undefined) {
+  received = received?.trim() ?? null;
+  expected = expected?.trim();
   if (!received || !expected || received.length !== expected.length) return false;
   let diff = 0;
   for (let index = 0; index < expected.length; index += 1) diff |= received.charCodeAt(index) ^ expected.charCodeAt(index);

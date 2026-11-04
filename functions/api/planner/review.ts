@@ -1,4 +1,4 @@
-import { accessEmail, error, json, type PlannerContext } from "../../_shared/planner";
+import { accessEmail, error, json, syncSecret, type PlannerContext } from "../../_shared/planner";
 
 const actions = new Set(["approve", "request_changes"]);
 
@@ -10,7 +10,8 @@ const actions = new Set(["approve", "request_changes"]);
 export async function onRequestPost({ request, env }: PlannerContext) {
   const email = await accessEmail(request, env);
   if (!email) return error("Ingresá al planificador con un email habilitado del equipo.", 401);
-  if (!env.PLANNER_ACTIONS_URL || !env.PLANNER_SYNC_SECRET) return error("Las acciones de revisión no están configuradas.", 503);
+  const secret = syncSecret(env);
+  if (!env.PLANNER_ACTIONS_URL || !secret) return error("Las acciones de revisión no están configuradas.", 503);
 
   let body: { item_id?: string; action?: string; comment?: string };
   try {
@@ -30,10 +31,10 @@ export async function onRequestPost({ request, env }: PlannerContext) {
   if (item.status === "scheduled" || item.status === "published") return error("La pieza ya está programada o publicada.", 409);
 
   // Apps Script responde con una redirección a googleusercontent.com; fetch la sigue.
-  const response = await fetch(env.PLANNER_ACTIONS_URL, {
+  const response = await fetch(env.PLANNER_ACTIONS_URL.trim(), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ secret: env.PLANNER_SYNC_SECRET, source_key: item.source_key, title: item.title, action, comment, email }),
+    body: JSON.stringify({ secret, source_key: item.source_key, title: item.title, action, comment, email }),
   });
   const result = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
   if (!result?.ok) return error(result?.error ?? "No fue posible guardar la decisión en la grilla.", 502);
