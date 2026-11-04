@@ -35,7 +35,7 @@ Directa, inteligente, cálida, concreta y segura. Profesional sin rigidez; inspi
 - Tagline: “Change the game. By design.”
 - Toda pieza final —incluidos carruseles, stories, covers de reels y publicaciones de LinkedIn— se crea o adapta dentro del Brand Template de Canva correspondiente. Es la única fuente de layout, tipografía y componentes para entregables publicables.
 - Los mockups, imágenes generadas o composiciones externas pueden usarse exclusivamente como assets de apoyo; nunca sustituyen al Brand Template de Canva ni se entregan como pieza final.
-- **Etapa actual de diseño:** el equipo de DOOH produce las gráficas en Canva. La automatización entrega dirección creativa, texto por placa, copy, CTA y assets recomendados; no crea ni edita diseños hasta contar con una biblioteca suficiente de piezas aprobadas que funcione como referencia visual.
+- **Etapa actual de diseño:** la automatización genera un borrador de cada pieza llenando por autofill los campos del Brand Template correspondiente (textos e imagen). No cambia layout, paleta ni tipografía. En piezas de proyectos usa solo fotos reales del trabajo, cargadas por el equipo en Drive; puede recortarlas y ajustar luz o color, pero no alterar su contenido. El equipo revisa, ajusta y exporta el diseño desde Canva.
 
 ---
 
@@ -125,10 +125,10 @@ La automatización genera y organiza el material editorial, pero no publica nota
 1. Revisar esta configuración, los documentos de marca, el calendario editorial mensual y el historial de contenido aprobado para evitar repeticiones.
 2. Armar la grilla semanal con fecha, plataforma, eje, categoría e idioma. Si deriva de una nota, registrar su título o URL como `Nota fuente`.
 3. Generar el copy, caption y hashtags con español primero e inglés como segunda sección dentro del mismo caption.
-4. Entregar la dirección creativa: objetivo, template de Canva, texto por placa, indicaciones visuales, assets recomendados y CTA. El equipo de DOOH duplica y completa el Brand Template correspondiente; registra en la grilla el enlace al diseño y exporta los entregables desde allí.
+4. Generar el borrador de diseño con el autofill del Brand Template y registrar su enlace en la grilla junto con lo que falte ajustar. Si el template no tiene campos de autofill, entregar la dirección creativa (template, texto por placa, imágenes y CTA) para que el equipo lo diseñe. El equipo exporta los entregables desde Canva.
 5. Ejecutar QA de marca: tono, repetición, categoría habilitada, ajuste de texto y alcance de la información.
-6. Guardar los inputs y archivos de trabajo en `automation/`; subir los assets de revisión a Google Drive y registrar cada ítem en Google Sheet cuando se habilite el circuito compartido.
-7. Dejar cada pieza en estado `Pendiente de aprobación`, `Revisar`, `Aprobado` o `Rechazado`.
+6. Registrar cada pieza en la grilla de Google Sheets, que es el único lugar de revisión y aprobación. Las imágenes de proyectos se guardan en Drive, en una carpeta por proyecto.
+7. Dejar cada pieza en estado `En revisión`; el equipo la pasa a `Revisar`, `Aprobado` o `Rechazado`.
 8. Marcar `Programar publicación = Sí` solo cuando existan los assets finales de la pieza y de su story, y estén definidos sus horarios.
 9. Publicar exclusivamente los ítems `Aprobado` que además tengan asset final, fecha/hora y `Programar publicación = Sí`.
 
@@ -136,10 +136,10 @@ La automatización genera y organiza el material editorial, pero no publica nota
 
 | Elemento | Definición |
 | --- | --- |
-| Fuente de trabajo | Carpeta `automation/` de este repositorio: inputs, grilla, assets y registros. |
+| Fuente de trabajo | [Grilla de redes](https://docs.google.com/spreadsheets/d/1n_dtGSjoxJd_SIHwU_0YvfHAj1tDR7CPRDWH-frfL_c/edit) en Google Sheets, assets en Google Drive y diseños en Canva. |
 | Assets de revisión | [Carpeta operativa de Google Drive](https://drive.google.com/drive/folders/1Zw8jLtzBdhwcoErdl2AjPzVDpJOzPTa_?usp=drive_link): [inputs y referencias](https://drive.google.com/drive/folders/1WGxxOzIKkdvkhYH0UlBG385c2xDJr-Js), [grillas para aprobación](https://drive.google.com/drive/folders/1PyIHVseYFNROwYC_cBJX8mY4RZkKIceC), [piezas aprobadas](https://drive.google.com/drive/folders/1pA6TV1bL1yRjGJFNcSdlMSXpCEDkmwR5) y [archivo](https://drive.google.com/drive/folders/1dvhZ0l56Y-A4VqTeh9hDcwd33pZuaA55). |
 | Carga de inputs | [Formulario de inputs](https://docs.google.com/spreadsheets/d/1wIibWzTBJTPbJ5BOWPVTSmfrnGSRqPQ5vbh0rUqn9_0/edit?usp=drivesdk), ubicado en la carpeta de inputs. |
-| Control editorial | Google Sheet vinculado a la tanda, cuando se habilite el circuito compartido. |
+| Control editorial | La misma grilla de redes: aprobación, assets finales, programación y resultado de publicación. |
 | Responsables de aprobación | `florencia@dooh.com.ar`, `fernanda@dooh.com.ar` y `hello@dooh.com.ar`. |
 | Regla de aprobación | El `Aprobado` de cualquiera de los tres responsables es suficiente para validar copy y gráfica. No programa ni publica por sí solo. |
 | Entrega | Calendario y borrador de nota, grilla, caption bilingüe, archivos finales y resultado del QA por pieza. |
@@ -180,6 +180,5 @@ El escenario de Make revisará la grilla periódicamente y solo procesará filas
 
 ## 8. Pendientes para activar la primera Routine
 
-- Crear el Google Sheet de control con sus permisos, si se requiere un circuito compartido fuera del repositorio.
 - Confirmar permisos de administrador y vincular las cuentas de Instagram y LinkedIn en Make.
 - Crear y probar el escenario de Make después de validar el flujo manual.

@@ -1,13 +1,16 @@
 # Armar una tanda semanal
 
-Procedimiento a pedido: el equipo pide “armá la tanda de la semana” y el asistente prepara copy y dirección visual para la grilla fija. El diseño, la aprobación y la publicación siguen siendo humanos.
+Procedimiento a pedido: el equipo pide “armá la tanda de la semana” y el asistente prepara el copy y los diseños en Canva para la grilla fija. La aprobación y la publicación siguen siendo humanas.
+
+El circuito completo es: **ideas en el Formulario de inputs → el asistente arma la tanda y sus diseños → el equipo aprueba en la grilla.**
 
 ## Fuentes
 
 | Fuente | Uso |
 | --- | --- |
 | [Formulario de inputs](https://docs.google.com/spreadsheets/d/1wIibWzTBJTPbJ5BOWPVTSmfrnGSRqPQ5vbh0rUqn9_0/edit) | Temas disponibles. Solo filas con `Autorizado para usar = Confirmado` y `Estado` distinto de `Usado`. |
-| [Grilla de redes](https://docs.google.com/spreadsheets/d/1n_dtGSjoxJd_SIHwU_0YvfHAj1tDR7CPRDWH-frfL_c/edit) | Historial: evitar repetir temas, ganchos o CTA, y continuar la numeración de piezas. |
+| [Grilla de redes](https://docs.google.com/spreadsheets/d/1n_dtGSjoxJd_SIHwU_0YvfHAj1tDR7CPRDWH-frfL_c/edit) | Único lugar de revisión y aprobación. Historial para evitar repetir temas, ganchos o CTA, y continuar la numeración de piezas. |
+| Carpeta de imágenes del proyecto en Drive | Fotos reales del trabajo, una carpeta por proyecto. Se reutilizan en todas las piezas de ese proyecto. |
 | [`../../docs/automation/DOOH_Automatizacion_RRSS.md`](../../docs/automation/DOOH_Automatizacion_RRSS.md) | Voz, ejes, cadencia, templates de Canva y guardrails. |
 | [`../../docs/base/01-brand-identity.md`](../../docs/base/01-brand-identity.md) | Identidad de marca. |
 
@@ -16,14 +19,25 @@ Procedimiento a pedido: el equipo pide “armá la tanda de la semana” y el as
 1. Leer las fuentes. Si el pedido no indica la semana, usar la próxima semana que empieza en lunes.
 2. Elegir 3 temas balanceando los ejes del mes (50 % Projects & Work, 30 % Thinking & Insights, 20 % Culture & Collaboration). Si no hay 3 inputs válidos, armar solo los que haya y avisar: nunca completar con temas inventados.
 3. Por cada tema, preparar la pieza principal, su adaptación para LinkedIn cuando corresponda según el criterio por canal, y una story de Instagram para el día siguiente.
-4. Escribir una fila por pieza con las columnas de abajo.
-5. Subir la tanda como archivo CSV en UTF-8, **sin convertirlo a Google Sheets**, a la carpeta `Tandas para importar` (junto a la grilla), con el título `Tanda AAAA-MM-DD.csv` (lunes de la semana). Si se convierte, Drive transforma textos como `Lunes 09/11` en fechas y el script no lo importa.
-6. En la grilla, ejecutar **Planificador DOOH → Importar tanda nueva**. Agrega las filas al final, crea sus carpetas de assets y marca la tanda como importada. Si algo falla, deshace las filas de esa tanda y no la marca.
+4. Generar el diseño de cada pieza en Canva con el autofill del Brand Template que corresponde (ver [Diseños en Canva](#diseños-en-canva)).
+5. Cargar las filas en la grilla con las columnas de abajo, incluido el link del diseño.
+   - **Con el conector de Google Sheets:** escribir las filas directo al final de la grilla y crear sus carpetas de assets.
+   - **Sin el conector:** subir la tanda como CSV en UTF-8, **sin convertirlo a Google Sheets**, a la carpeta `Tandas para importar` con el título `Tanda AAAA-MM-DD.csv` (lunes de la semana), y ejecutar **Planificador DOOH → Importar tanda nueva** en la grilla. Si se convierte, Drive transforma textos como `Lunes 09/11` en fechas y el script no lo importa.
+6. Exportar cada borrador de Canva como PNG (solo las páginas que se usan, numeradas `1`, `2`, `3`… en orden de placa) y subirlo a la carpeta de `Assets finales (Drive)` de su pieza, para que el planificador muestre la gráfica junto al copy. Si el equipo ajusta el diseño en Canva, reemplaza esos archivos antes de aprobar: esa carpeta es la que se publica.
 7. Informar al equipo qué temas se usaron para que marquen esos inputs como `Usado`.
+
+## Diseños en Canva
+
+- Usar solo los Brand Templates de [`DOOH_Automatizacion_RRSS.md`](../../docs/automation/DOOH_Automatizacion_RRSS.md#2-templates-aprobados-de-canva). Antes de llenarlos, confirmar sus campos de autofill; si un template no tiene campos o no está accesible, marcar `[FALTA TEMPLATE]` y dejar la dirección visual para que el equipo lo diseñe.
+- Textos cortos: en stories, hasta unos 25 caracteres por campo; el texto largo va en el caption, no en la placa.
+- Imágenes:
+  - **Piezas de proyectos:** solo fotos reales de la carpeta del proyecto en Drive. Se puede recortar al formato y ajustar luz, contraste o color; no se cambia el contenido del trabajo ni se completan zonas con IA.
+  - **Sin foto disponible:** dejar la imagen del template y anotar en `Dirección visual` qué imagen falta.
+- El diseño generado es un borrador: el equipo lo revisa, ajusta y exporta desde Canva. Si el template tiene variantes de más, el equipo borra las páginas que no se usan.
 
 ## Columnas de la tanda
 
-La fila 1 lleva estos encabezados, escritos igual que en la grilla. Las columnas que no figuren quedan vacías.
+Se escriben con los encabezados exactos de la grilla. Las columnas que no figuren quedan vacías.
 
 | Columna | Contenido |
 | --- | --- |
@@ -36,7 +50,7 @@ La fila 1 lleva estos encabezados, escritos igual que en la grilla. Las columnas
 | `Tema` | `Proyecto — ángulo`, por ejemplo `MUUD — identidad para cafetería en Trelew`. |
 | `Copy ES` | Caption en español con hashtags. |
 | `Copy EN` | Traducción adaptada, con hashtags. |
-| `Dirección visual` | Template de Canva a usar (nombre e ID), texto por placa, imágenes sugeridas y CTA. |
+| `Dirección visual` | Link del diseño generado en Canva, template usado y qué falta ajustar (imagen, placas, variantes). Si no se generó diseño, template a usar, texto por placa, imágenes sugeridas y CTA. |
 | `Assets / fuente` | Link del input en Drive o fuente del dato. |
 | `Estado` | Siempre `En revisión`. Es una lista desplegable en la grilla: un valor distinto queda marcado como inválido. |
 | `Pieza relacionada` | En stories y adaptaciones, la pieza principal (`05-IG`). |
