@@ -1,31 +1,37 @@
 /**
- * Sincronización manual y sin costo adicional para la grilla DOOH.
+ * Sincronización sin costo adicional entre la grilla DOOH y el planificador
+ * (Cloudflare Pages: base D1 e imágenes en R2).
  *
  * Instalación: ver SETUP.md en esta misma carpeta.
  * Las claves quedan sólo en Script Properties de Google Apps Script.
  */
 
-// Versión actual: importa tandas preparadas en Drive y crea una carpeta por pieza.
-const PLANNER_SYNC_VERSION = '2026.11.03.5';
+// Versión actual: sincroniza con Cloudflare en lugar de Supabase.
+const PLANNER_SYNC_VERSION = '2026.11.04.2';
 
 const PLANNER_CONFIG = {
   sheetName: 'Grilla semanal',
   headerRow: 4,
-  supabaseTable: 'content_items',
-  assetsTable: 'content_item_assets',
   assetsHeader: 'Assets finales (Drive)',
   // Se usa sólo si no existe DRIVE_ASSETS_FOLDER_ID: se crea junto a la planilla.
   defaultAssetsFolderName: 'Assets finales',
   // Se usa sólo si no existe TANDAS_FOLDER_ID: se crea junto a la planilla.
   defaultBatchesFolderName: 'Tandas para importar',
   importedPrefix: '✓ Importada · ',
+  timeZone: 'America/Argentina/Buenos_Aires',
+};
+
+// Acciones del planificador: valor que se escribe en “Estado” y etiqueta para “Observaciones”.
+const REVIEW_ACTIONS = {
+  approve: { status: 'Aprobado', label: 'Aprobado' },
+  request_changes: { status: 'Revisar', label: 'Pedido de cambios' },
 };
 
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('Planificador DOOH')
     .addItem('Importar tanda nueva', 'importBatches')
-    .addItem('Sincronizar con Supabase', 'syncPlanner')
+    .addItem('Sincronizar con el planificador', 'syncPlanner')
     .addItem('Crear carpetas de assets', 'createAssetFolders')
     .addSeparator()
     .addItem('Activar sincronización cada hora', 'enableHourlySync')
@@ -34,14 +40,7 @@ function onOpen() {
 }
 
 function syncPlanner() {
-  const properties = PropertiesService.getScriptProperties().getProperties();
-  const supabaseUrl = removeTrailingSlash_(properties.SUPABASE_URL);
-  const serviceRoleKey = properties.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error('Faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en Script Properties. Ver SETUP.md.');
-  }
-
+  const api = plannerApi_();
   const grid = readGrid_();
   if (!grid) {
     notify_('No hay piezas para sincronizar.');
@@ -56,46 +55,157 @@ function syncPlanner() {
   });
 
   const folders = ensureAssetFolders_(sheet, headerIndex, rawRows);
-  const report = { createdOrUpdated: 0, assets: 0, previews: 0, skipped: 0, errors: folders.errors.slice() };
+  const report = { createdOrUpdated: 0, assets: 0, uploads: 0, skipped: 0, removed: 0, errors: folders.errors.slice() };
+  const sourceKeys = [];
 
   rawRows.forEach((row, offset) => {
     const rowNumber = PLANNER_CONFIG.headerRow + 1 + offset;
-    const piece = value_(row, headerIndex, 'Pieza');
-    const title = value_(row, headerIndex, 'Tema');
-    if (!piece || !title) {
+    if (!value_(row, headerIndex, 'Pieza') || !value_(row, headerIndex, 'Tema')) {
       report.skipped += 1;
       return;
     }
-
+    const sourceKey = `${spreadsheet.getId()}:${sheet.getSheetId()}:${rowNumber}`;
+    sourceKeys.push(sourceKey);
     try {
-      const sourceKey = `${spreadsheet.getId()}:${sheet.getSheetId()}:${rowNumber}`;
-      const item = upsertContentItem_(supabaseUrl, serviceRoleKey, sourceKey, row, headerIndex, rowNumber);
-      const finalAssetSource = value_(row, headerIndex, 'Assets finales (Drive)');
-      const assets = listDriveAssets_(finalAssetSource);
-      const previewSource = value_(row, headerIndex, 'Preview / cover');
-
-      const preview = listDriveAssets_(previewSource)[0];
-      replaceAssets_(supabaseUrl, serviceRoleKey, item.id, assets);
-      replacePreview_(supabaseUrl, serviceRoleKey, item.id, preview);
+      const result = syncRow_(api, sourceKey, row, headerIndex, rowNumber);
       report.createdOrUpdated += 1;
-      report.assets += assets.length;
-      report.previews += preview ? 1 : 0;
+      report.assets += result.assets;
+      report.uploads += result.uploads;
     } catch (error) {
       report.errors.push(`Fila ${rowNumber}: ${error.message}`);
     }
   });
 
+  // Quita del planificador las filas que ya no existen en la grilla.
+  if (sourceKeys.length) {
+    try {
+      report.removed = apiRequest_(api, { op: 'prune', source_keys: sourceKeys }).removed;
+    } catch (error) {
+      report.errors.push(`Limpieza: ${error.message}`);
+    }
+  }
+
   const message = [
     `Piezas sincronizadas: ${report.createdOrUpdated}`,
     `Carpetas nuevas: ${folders.created}`,
-    `Assets encontrados: ${report.assets}`,
-    `Covers sincronizados: ${report.previews}`,
+    `Assets encontrados: ${report.assets} (subidos ahora: ${report.uploads})`,
+    `Piezas quitadas del planificador: ${report.removed}`,
     `Filas sin pieza o tema: ${report.skipped}`,
   ];
   if (report.errors.length) {
     message.push('', `Errores (${report.errors.length}):`, report.errors.slice(0, 8).join('\n'));
   }
   notify_(message.join('\n'));
+}
+
+// Envía una fila al planificador y sube solo los archivos de Drive nuevos o modificados.
+function syncRow_(api, sourceKey, row, headerIndex, rowNumber) {
+  const item = apiRequest_(api, { op: 'upsert_item', item: itemPayload_(sourceKey, row, headerIndex, rowNumber) });
+  const stored = item.keys || [];
+  let uploads = 0;
+
+  const toKey = (file, prefix) => `items/${item.id}/${prefix}${file.getId()}-${file.getLastUpdated().getTime()}-${safeFileName_(file.getName())}`;
+  const upload = (file, key) => {
+    if (stored.indexOf(key) !== -1) return;
+    uploadAsset_(api, key, file);
+    uploads += 1;
+  };
+
+  const assets = listDriveFiles_(value_(row, headerIndex, 'Assets finales (Drive)')).map((file) => {
+    const key = toKey(file, '');
+    upload(file, key);
+    return { r2_key: key, asset_type: assetType_(file), drive_file_id: file.getId(), alt_text: file.getName() };
+  });
+  const cover = listDriveFiles_(value_(row, headerIndex, 'Preview / cover'))[0];
+  const previewKey = cover ? toKey(cover, 'preview-') : null;
+  if (cover) upload(cover, previewKey);
+
+  apiRequest_(api, { op: 'set_assets', item_id: item.id, assets: assets, preview_key: previewKey });
+  return { assets: assets.length, uploads: uploads };
+}
+
+/**
+ * Endpoint de la aplicación web: el planificador (Pages Function, ya validada
+ * por Cloudflare Access) envía aprobaciones y pedidos de cambio. Se publica
+ * como “Ejecutar como: yo” y “Acceso: cualquier usuario”; solo acepta pedidos
+ * con la clave PLANNER_SYNC_SECRET (ver SETUP.md).
+ */
+function doPost(e) {
+  let result;
+  try {
+    const request = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+    result = { ok: true, item: reviewAction_(request) };
+  } catch (error) {
+    result = { ok: false, error: error.message };
+  }
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}
+
+// Escribe la decisión en la grilla (fuente de verdad) y vuelve a sincronizar esa fila.
+function reviewAction_(request) {
+  const api = plannerApi_();
+  if (!sameSecret_(String(request.secret || ''), api.secret)) throw new Error('Clave inválida.');
+  const action = REVIEW_ACTIONS[request.action];
+  if (!action) throw new Error('Acción desconocida.');
+  const comment = String(request.comment || '').trim();
+  if (request.action === 'request_changes' && !comment) throw new Error('Escribí qué hay que cambiar.');
+  const email = String(request.email || '').trim();
+  if (!email) throw new Error('Falta el email de quien revisa.');
+  const sourceKey = String(request.source_key || '');
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const grid = readGrid_();
+    const [spreadsheetId, sheetId, rowText] = sourceKey.split(':');
+    const rowNumber = Number(rowText);
+    if (!grid || spreadsheetId !== grid.spreadsheet.getId() || Number(sheetId) !== grid.sheet.getSheetId() || !rowNumber) {
+      throw new Error('La pieza no pertenece a esta grilla.');
+    }
+    const row = grid.rawRows[rowNumber - PLANNER_CONFIG.headerRow - 1];
+    // La referencia es la fila: si alguien insertó o movió filas, no se escribe sobre otra pieza.
+    if (!row || value_(row, grid.headerIndex, 'Tema') !== String(request.title || '')) {
+      throw new Error('La grilla cambió desde la última sincronización. Sincronizá y volvé a intentar.');
+    }
+
+    const statusColumn = grid.headerIndex['Estado'];
+    const notesColumn = grid.headerIndex['Observaciones'];
+    if (statusColumn === undefined || notesColumn === undefined) {
+      throw new Error('Faltan los encabezados “Estado” u “Observaciones” en la grilla.');
+    }
+    const stamp = Utilities.formatDate(new Date(), PLANNER_CONFIG.timeZone, 'yyyy-MM-dd HH:mm');
+    const entry = `${stamp} · ${email} · ${action.label}${comment ? `: ${comment}` : ''}`;
+    const previous = value_(row, grid.headerIndex, 'Observaciones');
+    const notes = previous ? `${entry}\n${previous}` : entry;
+
+    grid.sheet.getRange(rowNumber, statusColumn + 1).setValue(action.status);
+    grid.sheet.getRange(rowNumber, notesColumn + 1).setValue(notes);
+    SpreadsheetApp.flush();
+    row[statusColumn] = action.status;
+    row[notesColumn] = notes;
+
+    syncRow_(api, sourceKey, row, grid.headerIndex, rowNumber);
+    return { status: action.status };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function plannerApi_() {
+  const properties = PropertiesService.getScriptProperties().getProperties();
+  const url = removeTrailingSlash_(properties.PLANNER_API_URL);
+  const secret = properties.PLANNER_SYNC_SECRET;
+  if (!url || !secret) {
+    throw new Error('Faltan PLANNER_API_URL o PLANNER_SYNC_SECRET en Script Properties. Ver SETUP.md.');
+  }
+  return { url: url, secret: secret };
+}
+
+function sameSecret_(received, expected) {
+  if (!received || !expected || received.length !== expected.length) return false;
+  let diff = 0;
+  for (let index = 0; index < expected.length; index += 1) diff |= received.charCodeAt(index) ^ expected.charCodeAt(index);
+  return diff === 0;
 }
 
 function createAssetFolders() {
@@ -291,11 +401,11 @@ function notify_(message) {
   }
 }
 
-function upsertContentItem_(supabaseUrl, serviceRoleKey, sourceKey, row, headerIndex, rowNumber) {
+function itemPayload_(sourceKey, row, headerIndex, rowNumber) {
   const title = value_(row, headerIndex, 'Tema');
-  const finalAssetSource = value_(row, headerIndex, 'Assets finales (Drive)');
-  const payload = {
+  return {
     source_key: sourceKey,
+    piece: value_(row, headerIndex, 'Pieza'),
     project: projectFromTitle_(title),
     title: title,
     channel: normalizeChannel_(value_(row, headerIndex, 'Canal')),
@@ -304,95 +414,56 @@ function upsertContentItem_(supabaseUrl, serviceRoleKey, sourceKey, row, headerI
     caption_es: value_(row, headerIndex, 'Copy ES'),
     caption_en: value_(row, headerIndex, 'Copy EN'),
     creative_direction: value_(row, headerIndex, 'Dirección visual'),
-    canva_url: null,
-    asset_url: finalAssetSource || null,
+    canva_url: canvaUrl_(value_(row, headerIndex, 'Dirección visual')),
+    asset_url: value_(row, headerIndex, 'Assets finales (Drive)') || null,
     scheduled_at: dateValue_(row, headerIndex, 'Fecha/hora salida'),
     status: normalizeStatus_(value_(row, headerIndex, 'Estado')),
     publish_requested: yes_(value_(row, headerIndex, 'Programar publicación')),
     published_url: value_(row, headerIndex, 'URL publicada') || null,
+    review_notes: value_(row, headerIndex, 'Observaciones'),
     sort_order: 100000 - rowNumber,
   };
-
-  const response = supabaseRequest_(
-    supabaseUrl,
-    serviceRoleKey,
-    'post',
-    `${PLANNER_CONFIG.supabaseTable}?on_conflict=source_key`,
-    payload,
-    { Prefer: 'resolution=merge-duplicates,return=representation' }
-  );
-  if (!response.length || !response[0].id) {
-    throw new Error('Supabase no devolvió el identificador de la pieza.');
-  }
-  return response[0];
 }
 
-function replaceAssets_(supabaseUrl, serviceRoleKey, contentItemId, assets) {
-  const prepared = assets.map((asset, index) => {
-    const storagePath = `sheet-sync/${contentItemId}/${String(index + 1).padStart(2, '0')}-${asset.id}-${safeFileName_(asset.name)}`;
-    uploadDriveAsset_(supabaseUrl, serviceRoleKey, storagePath, asset);
-    return Object.assign({}, asset, { storagePath: storagePath });
+function apiRequest_(api, payload) {
+  const response = UrlFetchApp.fetch(`${api.url}/api/sync/planner`, {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify(payload),
+    headers: { 'X-Planner-Secret': api.secret },
+    muteHttpExceptions: true,
   });
-
-  supabaseRequest_(
-    supabaseUrl,
-    serviceRoleKey,
-    'delete',
-    `${PLANNER_CONFIG.assetsTable}?content_item_id=eq.${encodeURIComponent(contentItemId)}`
-  );
-
-  if (!prepared.length) return;
-
-  const payload = prepared.map((asset, index) => ({
-    content_item_id: contentItemId,
-    placement: 'post',
-    asset_type: asset.assetType,
-    storage_path: asset.storagePath,
-    drive_file_id: asset.id,
-    source_url: asset.url,
-    alt_text: asset.name,
-    sort_order: index + 1,
-  }));
-  supabaseRequest_(supabaseUrl, serviceRoleKey, 'post', PLANNER_CONFIG.assetsTable, payload);
+  return parseApiResponse_(response, payload.op);
 }
 
-function replacePreview_(supabaseUrl, serviceRoleKey, contentItemId, preview) {
-  let previewPath = null;
-  if (preview) {
-    previewPath = `sheet-sync/${contentItemId}/preview-${preview.id}-${safeFileName_(preview.name)}`;
-    uploadDriveAsset_(supabaseUrl, serviceRoleKey, previewPath, preview);
-  }
-  supabaseRequest_(
-    supabaseUrl,
-    serviceRoleKey,
-    'patch',
-    `${PLANNER_CONFIG.supabaseTable}?id=eq.${encodeURIComponent(contentItemId)}`,
-    { preview_path: previewPath }
-  );
+function uploadAsset_(api, key, file) {
+  const response = UrlFetchApp.fetch(`${api.url}/api/sync/planner-asset?key=${encodeURIComponent(key)}`, {
+    method: 'put',
+    contentType: file.getMimeType(),
+    payload: file.getBlob().getBytes(),
+    headers: { 'X-Planner-Secret': api.secret },
+    muteHttpExceptions: true,
+  });
+  parseApiResponse_(response, `subir ${file.getName()}`);
 }
 
-function uploadDriveAsset_(supabaseUrl, serviceRoleKey, storagePath, asset) {
-  const response = UrlFetchApp.fetch(
-    `${supabaseUrl}/storage/v1/object/planner-assets/${encodeURIComponent(storagePath).replace(/%2F/g, '/')}`,
-    {
-      method: 'post',
-      contentType: asset.mimeType,
-      payload: asset.blob,
-      headers: {
-        apikey: serviceRoleKey,
-        Authorization: `Bearer ${serviceRoleKey}`,
-        'x-upsert': 'true',
-      },
-      muteHttpExceptions: true,
-    }
-  );
+function parseApiResponse_(response, label) {
   const status = response.getResponseCode();
-  if (status < 200 || status >= 300) {
-    throw new Error(`No se pudo copiar ${asset.name} a Storage (${status}): ${response.getContentText().slice(0, 200)}`);
+  const body = response.getContentText();
+  let result = null;
+  try {
+    result = JSON.parse(body);
+  } catch (error) {
+    result = null;
   }
+  if (status < 200 || status >= 300 || !result || !result.ok) {
+    throw new Error(`El planificador respondió ${status} (${label}): ${(result && result.error) || body.slice(0, 200)}`);
+  }
+  return result;
 }
 
-function listDriveAssets_(source) {
+// Archivos de imagen o video de una carpeta (en orden natural) o de un enlace a un archivo.
+function listDriveFiles_(source) {
   const id = driveIdFromUrl_(source);
   if (!id) return [];
 
@@ -400,54 +471,26 @@ function listDriveAssets_(source) {
   // No se intenta abrir un JPG como carpeta: DriveApp puede devolver resultados
   // inconsistentes para ese caso y dejar el cover fuera de la sincronización.
   if (String(source).indexOf('/folders/') !== -1) {
-    const folder = DriveApp.getFolderById(id);
-    const iterator = folder.getFiles();
+    const iterator = DriveApp.getFolderById(id).getFiles();
     const files = [];
     while (iterator.hasNext()) {
       const file = iterator.next();
-      const mimeType = file.getMimeType();
-      if (mimeType.indexOf('image/') === 0 || mimeType.indexOf('video/') === 0) {
-        files.push(driveAsset_(file));
-      }
+      if (isMedia_(file)) files.push(file);
     }
-    return files.sort(naturalFileOrder_);
+    return files.sort((a, b) => a.getName().localeCompare(b.getName(), undefined, { numeric: true, sensitivity: 'base' }));
   }
 
   const file = DriveApp.getFileById(id);
-  const mimeType = file.getMimeType();
-  if (mimeType.indexOf('image/') !== 0 && mimeType.indexOf('video/') !== 0) return [];
-  return [driveAsset_(file)];
+  return isMedia_(file) ? [file] : [];
 }
 
-function driveAsset_(file) {
+function isMedia_(file) {
   const mimeType = file.getMimeType();
-  return {
-    id: file.getId(),
-    name: file.getName(),
-    mimeType: mimeType,
-    blob: file.getBlob(),
-    assetType: mimeType.indexOf('video/') === 0 ? 'video' : 'image',
-    url: `https://drive.google.com/uc?export=view&id=${file.getId()}`,
-  };
+  return mimeType.indexOf('image/') === 0 || mimeType.indexOf('video/') === 0;
 }
 
-function supabaseRequest_(supabaseUrl, serviceRoleKey, method, path, payload, extraHeaders) {
-  const response = UrlFetchApp.fetch(`${supabaseUrl}/rest/v1/${path}`, {
-    method: method,
-    contentType: 'application/json',
-    payload: payload === undefined ? undefined : JSON.stringify(payload),
-    headers: Object.assign({
-      apikey: serviceRoleKey,
-      Authorization: `Bearer ${serviceRoleKey}`,
-    }, extraHeaders || {}),
-    muteHttpExceptions: true,
-  });
-  const status = response.getResponseCode();
-  const body = response.getContentText();
-  if (status < 200 || status >= 300) {
-    throw new Error(`Supabase respondió ${status}: ${body.slice(0, 300)}`);
-  }
-  return body ? JSON.parse(body) : null;
+function assetType_(file) {
+  return file.getMimeType().indexOf('video/') === 0 ? 'video' : 'image';
 }
 
 function indexHeaders_(headers) {
@@ -488,6 +531,7 @@ function normalizeStatus_(status) {
   const normalized = String(status).toLowerCase().trim();
   if (normalized === 'aprobado' || normalized === 'approved') return 'approved';
   if (normalized === 'en revisión' || normalized === 'en revision' || normalized === 'review') return 'review';
+  if (normalized === 'revisar' || normalized === 'changes_requested') return 'changes_requested';
   if (normalized === 'rechazado' || normalized === 'rejected') return 'rejected';
   if (normalized === 'programado' || normalized === 'scheduled') return 'scheduled';
   if (normalized === 'publicado' || normalized === 'published') return 'published';
@@ -498,6 +542,12 @@ function yes_(value) {
   return ['si', 'sí', 'yes', 'true', '1'].indexOf(String(value).toLowerCase().trim()) !== -1;
 }
 
+// Primer enlace de Canva escrito en “Dirección visual”, para abrir el diseño desde el planificador.
+function canvaUrl_(text) {
+  const match = String(text || '').match(/https:\/\/(?:www\.)?canva\.com\/[^\s)\]]+/);
+  return match ? match[0] : null;
+}
+
 function driveIdFromUrl_(value) {
   if (!value) return null;
   const stringValue = String(value);
@@ -505,10 +555,6 @@ function driveIdFromUrl_(value) {
   if (folderMatch) return folderMatch[1];
   const fileMatch = stringValue.match(/(?:\/d\/|id=)([a-zA-Z0-9_-]+)/);
   return fileMatch ? fileMatch[1] : null;
-}
-
-function naturalFileOrder_(a, b) {
-  return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
 }
 
 function removeTrailingSlash_(value) {

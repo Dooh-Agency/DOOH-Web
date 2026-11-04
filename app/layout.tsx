@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { Animations }   from "@/components/Animations";
-import { PlannerAuthRedirect } from "@/components/PlannerAuthRedirect";
 import { siteUrl } from "@/lib/site";
 import "./globals.css";
 
@@ -35,7 +34,6 @@ export default function RootLayout({
   return (
     <html lang="es" className={nunitoSans.variable}>
       <body>
-        <PlannerAuthRedirect />
         <SmoothScroll />
         <Animations />
         {children}

@@ -1,6 +1,20 @@
 # Sincronización de la grilla con el planificador
 
-Esta integración es gratuita a la escala actual: usa Google Apps Script, Google Drive y el proyecto de Supabase ya creado. No publica en redes ni llama a un modelo de IA.
+Esta integración es gratuita a la escala actual: usa Google Apps Script, Google Drive y Cloudflare (Pages Functions, base D1, almacenamiento R2 y Access, todos en plan gratuito). No publica en redes ni llama a un modelo de IA.
+
+## Cómo funciona
+
+```text
+Grilla (Google Sheets) ──Apps Script──▶ /api/sync/planner ──▶ D1 (piezas) + R2 (imágenes)
+                                                                   │
+Planificador (/planificador-redes) ◀──── /api/planner/* ◀──────────┘
+        │  Aprobar / Pedir cambios
+        └──▶ /api/planner/review ──▶ Apps Script (doPost) ──▶ escribe en la grilla y re-sincroniza la fila
+```
+
+- La grilla es la fuente de verdad. El planificador solo muestra lo sincronizado y escribe en la grilla las aprobaciones.
+- **Cloudflare Access** protege `/planificador-redes` y `/api/planner`: solo entran los emails de la política “Equipo DOOH” (`florencia@`, `fernanda@` y `hello@dooh.com.ar`), con un código que llega por mail. Para sumar a alguien, agregar su email en **Zero Trust → Access controls → Policies → Equipo DOOH**.
+- `/api/sync/*` queda fuera de Access y se autentica con la clave compartida `PLANNER_SYNC_SECRET`.
 
 ## Qué sincroniza
 
@@ -9,43 +23,73 @@ Lee la pestaña `Grilla semanal` de este documento:
 <https://docs.google.com/spreadsheets/d/1n_dtGSjoxJd_SIHwU_0YvfHAj1tDR7CPRDWH-frfL_c/edit?gid=1774004414#gid=1774004414>
 
 - Desde la fila 5, usando los encabezados de la fila 4.
-- Copy ES, copy EN, objetivo, formato, tamaño final, dirección visual, estado, enlace de asset final, programación y URL publicada.
+- Pieza, copy ES, copy EN, objetivo, formato, dirección visual (y el primer enlace de Canva que incluya), estado, observaciones, enlace de asset final, programación y URL publicada.
 - Cada canal es una fila independiente, aunque comparta concepto con otra pieza. Por ejemplo, `01-IG` y `01-LI` requieren sus propios assets finales y tamaños.
 - `Tamaño final` (E) indica la especificación de diseño y de exportación que corresponde a esa fila. Referencias actuales: feed/carrusel de Instagram `1080 × 1350 px · 4:5`, post vertical de LinkedIn `1200 × 1500 px · 4:5` y story `1080 × 1920 px · 9:16`.
-- `Assets / fuente` (K) es material de referencia: fotos base, links de inspiración o fuente del contenido. Todavía no genera una gráfica de Canva de forma automática ni se publica desde allí.
-- `Assets finales (Drive)` (M) es la única fuente de publicación. Si contiene una carpeta de Drive, incorpora las imágenes y videos finales en orden natural (`1`, `2`, `3`…). Durante la sincronización, Apps Script copia esos archivos al bucket privado `planner-assets` de Supabase. Un enlace de Canva por sí solo no se puede previsualizar ni publicar: primero hay que exportar la pieza y subirla a Drive.
+- `Assets / fuente` (K) es material de referencia: fotos base, links de inspiración o fuente del contenido. No se sincroniza.
+- `Assets finales (Drive)` (M) es la única fuente de publicación. Si contiene una carpeta de Drive, incorpora las imágenes y videos en orden natural (`1`, `2`, `3`…) y los copia al bucket privado de R2. **Solo sube los archivos nuevos o modificados**: los que no cambiaron en Drive no se vuelven a subir. Un enlace de Canva por sí solo no se puede previsualizar ni publicar: primero hay que exportar la pieza y subirla a Drive.
 - `Preview / cover` (N, opcional) admite un único enlace a una imagen de Drive. Usalo en reels, videos y stories de video para fijar la portada que verá el equipo en el panel. Si queda vacío, el panel usa el primer asset final disponible.
-- Actualiza una misma pieza sin duplicarla. La referencia estable es su fila del Sheet.
+- Actualiza una misma pieza sin duplicarla: la referencia es su fila de la grilla. Las filas que ya no existen se quitan del planificador, con sus archivos.
 
-Los originales permanecen en Drive y se conserva su referencia, pero la previsualización se sirve desde Supabase Storage con una URL firmada. No hace falta publicar la carpeta ni los archivos de Drive: alcanza con que la cuenta que ejecuta Apps Script tenga acceso de lectura.
+Los originales permanecen en Drive. No hace falta publicar la carpeta ni los archivos: alcanza con que la cuenta que ejecuta Apps Script tenga acceso de lectura.
 
 ## Preparación (una vez)
 
-1. En Supabase → **SQL Editor**, ejecutar las migraciones pendientes de `supabase/migrations/`, incluida `20260827103000_content_item_preview_cover.sql`.
-2. En el Sheet, abrir **Extensiones → Apps Script**.
-3. Reemplazar el contenido inicial por [`Code.gs`](Code.gs), guardar el proyecto y recargar la planilla.
-4. En Apps Script, abrir **Project Settings → Script properties** y agregar:
+### En Cloudflare
 
-   - `SUPABASE_URL` → la Project URL de `dooh-social-planner-prod`.
-   - `SUPABASE_SERVICE_ROLE_KEY` → la clave `service_role` de Supabase, en **Project Settings → API Keys**.
+Ya configurado en la cuenta `hello@dooh.com.ar`:
 
-   Esta clave omite RLS para ejecutar la sincronización. Nunca copiarla en el sitio, en `.env.local`, en Git ni en un mensaje de chat.
+- Base D1 `dooh-planner` con el esquema de [`cloudflare/migrations/0001_planner.sql`](../../cloudflare/migrations/0001_planner.sql), conectada al proyecto de Pages `dooh-web` como `PLANNER_DB`.
+- Bucket privado de R2 `dooh-planner-assets`, conectado como `PLANNER_BUCKET`, con alertas de uso al 50 % del plan gratuito (escrituras y almacenamiento) enviadas a `hello@dooh.com.ar`.
+- Zero Trust Free (equipo `broad-waterfall-7727`) y la aplicación de Access “Planificador de redes” para `dooh-web.pages.dev/planificador-redes` y `dooh-web.pages.dev/api/planner`. Al mudar el dominio, agregar también `www.dooh.com.ar/planificador-redes` y `www.dooh.com.ar/api/planner` a la misma aplicación.
+
+En **Workers & Pages → dooh-web → Settings → Variables and secrets** (Production) cargar:
+
+| Nombre | Tipo | Valor |
+| --- | --- | --- |
+| `ACCESS_TEAM_DOMAIN` | Text | `broad-waterfall-7727.cloudflareaccess.com` |
+| `ACCESS_AUD` | Text | El “Application Audience (AUD) Tag” de la aplicación de Access |
+| `PLANNER_SYNC_SECRET` | Secret | Una clave larga y aleatoria; la misma va en Apps Script |
+| `PLANNER_ACTIONS_URL` | Secret | La URL `/exec` de la aplicación web de Apps Script (ver abajo) |
+
+Las variables se aplican en el siguiente despliegue.
+
+### En Apps Script
+
+1. En la grilla, abrir **Extensiones → Apps Script**.
+2. Reemplazar el contenido por [`Code.gs`](Code.gs), guardar el proyecto y recargar la planilla.
+3. En **Project Settings → Script properties**, agregar:
+
+   - `PLANNER_API_URL` → `https://dooh-web.pages.dev` (o `https://www.dooh.com.ar` cuando se mude el dominio).
+   - `PLANNER_SYNC_SECRET` → la misma clave cargada en Cloudflare. Nunca copiarla en el sitio, en `.env.local`, en Git ni en un mensaje de chat.
+
+   Si quedaron `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` de la versión anterior, borrarlas.
 
    Opcional: `DRIVE_ASSETS_FOLDER_ID` → el ID de la carpeta de Drive donde se crearán las carpetas de cada pieza. Si no se define, el script crea (o reutiliza) una carpeta `Assets finales` junto a la planilla y guarda su ID automáticamente.
-5. Volver a la grilla. En el menú nuevo **Planificador DOOH → Sincronizar con Supabase**, aceptar los permisos solicitados por Google.
+4. **Implementar → Nueva implementación → Aplicación web**, con **Ejecutar como: yo** y **Quién tiene acceso: cualquier usuario**. Autorizar los permisos y copiar la URL que termina en `/exec` en `PLANNER_ACTIONS_URL` de Cloudflare.
 
-Al finalizar aparece un resumen de piezas y assets. Para MUUD 01 debería indicar cuatro assets con el estado actual de la carpeta. La carpeta compartida que revisamos hoy contiene 4 archivos (`1` a `4`); cuando se agregue la quinta placa, la siguiente sincronización la incorporará automáticamente.
+   “Cualquier usuario” es necesario para que Cloudflare pueda llamarla; no da acceso a la grilla. Solo acepta pedidos con `PLANNER_SYNC_SECRET`, solo cambia `Estado` y `Observaciones` de una pieza ya sincronizada y no toca piezas programadas o publicadas.
+5. Volver a la grilla y ejecutar **Planificador DOOH → Sincronizar con el planificador**. Aceptar los permisos solicitados por Google.
+6. Activar **Planificador DOOH → Activar sincronización cada hora**.
+
+Cuando se cambie `Code.gs`, actualizar la implementación existente (**Implementar → Gestionar implementaciones → Editar → Nueva versión**) para conservar la misma URL.
 
 ## Operación
 
 La grilla es fija: cada semana se agregan filas nuevas al final, sin crear otra planilla.
 
 1. Cargar la pieza en la grilla con, al menos, `Pieza` y `Tema`, o importar una tanda preparada (ver abajo).
-2. Ejecutar **Planificador DOOH → Crear carpetas de assets** (o directamente **Sincronizar con Supabase**, que también las crea). Cada pieza sin link en `Assets finales (Drive)` recibe una carpeta `01-IG · Tema` y su link queda escrito en la columna. Nunca se reemplaza un link cargado a mano.
+2. Ejecutar **Planificador DOOH → Crear carpetas de assets** (o directamente **Sincronizar con el planificador**, que también las crea). Cada pieza sin link en `Assets finales (Drive)` recibe una carpeta `01-IG · Tema` y su link queda escrito en la columna. Nunca se reemplaza un link cargado a mano.
 3. Exportar la pieza desde Canva y soltar los archivos en esa carpeta, numerados `1`, `2`, `3`… para fijar el orden del carrusel.
-4. Sincronizar.
+4. Sincronizar, o esperar a la sincronización horaria. Las ejecuciones horarias no muestran un aviso: su resumen y sus errores quedan en **Apps Script → Ejecuciones**, y Google envía un correo si alguna falla.
 
-Cada vez que se edite un copy, una aprobación o una carpeta final, ejecutar **Sincronizar con Supabase**, o bien activar **Activar sincronización cada hora** para que corra sola. Las ejecuciones horarias no muestran un aviso: su resumen y sus errores quedan en **Apps Script → Ejecuciones**, y Google envía un correo si alguna falla. Para pausarla, usar **Desactivar sincronización cada hora**.
+En el planificador, **Actualizar** recarga lo último sincronizado.
+
+### Aprobar y pedir cambios
+
+Cada pieza muestra qué le falta para salir (copy, gráfica, fecha, aprobación y programación), un botón para abrir el diseño en Canva si `Dirección visual` incluye el enlace, y los botones **Aprobar** y **Pedir cambios** (con comentario obligatorio). La decisión se escribe en la grilla: `Estado` pasa a `Aprobado` o `Revisar` y `Observaciones` suma una línea con fecha, email y comentario. La pieza se actualiza en el planificador en el momento. Aprobar no programa ni publica: `Programar publicación` se sigue marcando en la grilla.
+
+Si alguien inserta o mueve filas en la grilla, la acción se rechaza con el aviso “La grilla cambió desde la última sincronización”: sincronizar y volver a intentar. Así nunca se escribe sobre otra pieza.
 
 ### Importar una tanda
 
@@ -53,4 +97,6 @@ Las tandas que prepara el asistente ([`../grid/TANDA_SEMANAL.md`](../grid/TANDA_
 
 Si una carpeta se renombra o se borra el link de la columna, la siguiente ejecución reutiliza la carpeta que tenga exactamente el nombre `Pieza · Tema`, o crea una nueva si el tema cambió.
 
-El planificador lee estas tablas de Supabase. Después de una sincronización, usar **Actualizar** en `/planificador-redes` para recargar los cambios.
+## Probar en local
+
+`npm run dev` sirve la página, pero no las funciones. Para probar el planificador completo, compilar (`npm run build`) y usar `npx wrangler pages dev` con un `wrangler.toml` **fuera del repositorio** que declare `PLANNER_DB`, `PLANNER_BUCKET`, `PLANNER_SYNC_SECRET` y `PLANNER_DEV_EMAIL`. No agregar un `wrangler.toml` al repo: Cloudflare Pages lo tomaría como configuración y dejaría de usar la del panel. `PLANNER_DEV_EMAIL` simula la sesión de Access y nunca debe cargarse en producción.

@@ -20,19 +20,18 @@ Guía para publicar el sitio en `https://www.dooh.com.ar` y dejar de usar Wix. S
 
 ## 2. Variables de entorno
 
-En **Settings → Variables and Secrets**. Las `NEXT_PUBLIC_*` se leen al compilar: cada cambio requiere un nuevo deploy. Las demás las lee la función del formulario en cada envío.
+En **Settings → Variables and Secrets**. Las `NEXT_PUBLIC_*` se leen al compilar: cada cambio requiere un nuevo deploy. Las demás las leen las funciones (formulario y planificador) en cada pedido.
 
 | Variable | Tipo | Production | Preview |
 | --- | --- | --- | --- |
 | `NEXT_PUBLIC_SITE_URL` | Text | `https://www.dooh.com.ar` | URL del preview, por ejemplo `https://dooh-web.pages.dev` |
-| `NEXT_PUBLIC_SUPABASE_URL` | Text | Project URL de `dooh-social-planner-prod` | Igual |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Text | Publishable key de Supabase | Igual |
 | `RESEND_API_KEY` | **Secret** | Clave de Resend (paso 3) | Igual |
 | `RESEND_FROM_EMAIL` | Text | `DOOH <contacto@dooh.com.ar>` | Igual |
 | `CONTACT_RECIPIENT` | Text | `hello@dooh.com.ar` | Igual |
 | `ALLOWED_CONTACT_ORIGIN` | Text | `https://www.dooh.com.ar` | Vacía |
+| `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`, `PLANNER_SYNC_SECRET`, `PLANNER_ACTIONS_URL` | Ver guía del planificador | Production | — |
 
-Nunca cargar en Cloudflare la clave `service_role` de Supabase: solo la usa Apps Script.
+El planificador de redes usa además la base D1 `PLANNER_DB`, el bucket R2 `PLANNER_BUCKET` y Cloudflare Access. Su configuración está en [`automation/google-sheet-sync/SETUP.md`](../../automation/google-sheet-sync/SETUP.md).
 
 ## 3. Resend (envío del formulario)
 

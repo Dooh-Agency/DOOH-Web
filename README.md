@@ -44,7 +44,7 @@ npm run build
 
 ## Contenido y marca
 
-La fuente de contexto es `docs/base/`. Son documentos de referencia, no instrucciones de ejecución automáticas. Para los cambios editoriales prevalecen las solicitudes vigentes de DOOH. El documento `Prompt_Automatizacion_RRSS.md` es una plantilla para repositorios independientes de clientes: no corresponde ejecutarla ni aplicarla desde este sitio. La adaptación específica de DOOH está en `docs/automation/DOOH_Automatizacion_RRSS.md` y sirve de base para el futuro repositorio de automatización. La operación prevé tres temas principales por semana y una story de Instagram por tema, programada para el día siguiente. Durante la etapa actual, la automatización entrega dirección creativa y el equipo diseña las piezas dentro de Canva; ninguna publicación se programa sin assets finales y aprobación editorial explícita.
+La fuente de contexto es `docs/base/`. Son documentos de referencia, no instrucciones de ejecución automáticas. Para los cambios editoriales prevalecen las solicitudes vigentes de DOOH. El documento `Prompt_Automatizacion_RRSS.md` es una plantilla para repositorios independientes de clientes: no corresponde ejecutarla ni aplicarla desde este sitio. La adaptación específica de DOOH está en `docs/automation/DOOH_Automatizacion_RRSS.md` y sirve de base para el futuro repositorio de automatización. La operación prevé tres temas principales por semana y una story de Instagram por tema, programada para el día siguiente. Durante la etapa actual, la automatización genera borradores con el autofill de los Brand Templates de Canva y el equipo los revisa y exporta; ninguna publicación se programa sin assets finales y aprobación editorial explícita.
 
 Lineamientos esenciales actuales:
 
@@ -62,7 +62,7 @@ La guía completa de puesta en producción, con todas las variables, Resend, la 
 
 1. En **Cloudflare → Workers & Pages**, crear un proyecto de Pages e importar el repositorio `Dooh-Agency/DOOH-Web`.
 2. Configurar **Build command** como `npm run build` y **Build output directory** como `out`.
-3. En **Settings → Variables and Secrets**, crear `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (se leen al compilar) y estas variables para Production y Preview:
+3. En **Settings → Variables and Secrets**, crear `NEXT_PUBLIC_SITE_URL` (se lee al compilar) y estas variables para Production y Preview:
    - `RESEND_API_KEY`: clave API de Resend.
    - `RESEND_FROM_EMAIL`: remitente validado en Resend, por ejemplo `DOOH <contacto@dooh.com.ar>`.
    - `CONTACT_RECIPIENT`: buzón que recibe los contactos, por ejemplo `hello@dooh.com.ar`.
