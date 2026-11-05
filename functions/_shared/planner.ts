@@ -34,6 +34,10 @@ export interface PlannerEnv {
   PLANNER_SYNC_SECRET?: string;
   // Aplicación web de Apps Script que escribe aprobaciones en la grilla.
   PLANNER_ACTIONS_URL?: string;
+  // Token de la API de Instagram (solo lectura) para mostrar los posts publicados.
+  INSTAGRAM_ACCESS_TOKEN?: string;
+  // ID de la cuenta de Instagram en Meta, para tokens de usuario del sistema (opcional).
+  INSTAGRAM_ACCOUNT_ID?: string;
   // Solo para `wrangler pages dev`: email con el que se simula la sesión de Access.
   PLANNER_DEV_EMAIL?: string;
 }
@@ -75,8 +79,8 @@ function base64UrlDecode(value: string) {
 type AccessKey = JsonWebKey & { kid: string };
 let cachedKeys: { domain: string; keys: AccessKey[]; expires: number } | null = null;
 
-async function accessKeys(domain: string) {
-  if (cachedKeys && cachedKeys.domain === domain && cachedKeys.expires > Date.now()) return cachedKeys.keys;
+async function accessKeys(domain: string, refresh = false) {
+  if (!refresh && cachedKeys && cachedKeys.domain === domain && cachedKeys.expires > Date.now()) return cachedKeys.keys;
   const response = await fetch(`https://${domain}/cdn-cgi/access/certs`);
   if (!response.ok) throw new Error("No se pudieron leer las claves de Cloudflare Access.");
   const { keys } = await response.json() as { keys: AccessKey[] };
@@ -98,7 +102,10 @@ export async function accessEmail(request: Request, env: PlannerEnv) {
   if (!headerPart || !payloadPart || !signaturePart) return null;
   try {
     const header = JSON.parse(new TextDecoder().decode(base64UrlDecode(headerPart))) as { kid?: string; alg?: string };
-    const key = (await accessKeys(env.ACCESS_TEAM_DOMAIN)).find((candidate) => candidate.kid === header.kid);
+    // Cloudflare rota las claves de firma: si el token usa una que no está en
+    // memoria, se vuelven a leer antes de rechazar la sesión.
+    let key = (await accessKeys(env.ACCESS_TEAM_DOMAIN)).find((candidate) => candidate.kid === header.kid);
+    if (!key) key = (await accessKeys(env.ACCESS_TEAM_DOMAIN, true)).find((candidate) => candidate.kid === header.kid);
     if (!key || header.alg !== "RS256") return null;
 
     const cryptoKey = await crypto.subtle.importKey("jwk", key, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
