@@ -105,10 +105,13 @@ export async function onRequestGet({ request, env }: PlannerContext) {
     : `${FACEBOOK_GRAPH}/${env.INSTAGRAM_ACCOUNT_ID?.trim() || DEFAULT_ACCOUNT_ID}/media`;
   const response = await fetch(`${endpoint}?fields=${fields}&limit=${LIMIT}&access_token=${encodeURIComponent(token)}`).catch(() => null);
   if (!response?.ok) {
-    // Si Instagram no responde, se muestra lo último guardado y se avisa.
+    // Si Instagram no responde, se muestra lo último guardado y se avisa, con el
+    // motivo que da Meta (no incluye el token) y el tipo de token usado.
+    const detail = await response?.json().then((body: { error?: { message?: string; code?: number; type?: string } }) => body.error).catch(() => null);
     return json({
       connected: true,
       posts: cached?.posts ?? [],
+      detail: { status: response?.status ?? 0, api: token.startsWith("IG") ? "instagram" : "facebook", tokenPrefix: token.slice(0, 4), message: detail?.message ?? "", code: detail?.code ?? null, type: detail?.type ?? "" },
       error: response?.status === 400 || response?.status === 401
         ? "Instagram rechazó el token: hay que volver a autorizar la cuenta."
         : "Instagram no respondió; se muestran los últimos posts guardados.",
