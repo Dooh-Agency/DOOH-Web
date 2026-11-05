@@ -40,6 +40,14 @@ type Item = {
   assets: Asset[];
 };
 
+// Post ya publicado en Instagram, leído con la API de solo lectura.
+type PublishedPost = { id: string; type: "image" | "video" | "carousel"; imageUrl: string; permalink: string; timestamp: string; caption: string };
+
+// Para no repetir un post que ya figura en la grilla con su “URL publicada”.
+function permalinkKey(url: string | null) {
+  return (url ?? "").split("?")[0].replace(/\/+$/, "").replace(/^https?:\/\/(www\.)?/, "").toLowerCase();
+}
+
 const labels: Record<PlannerStatus, string> = {
   draft: "Borrador", review: "En revisión", changes_requested: "Cambios solicitados", approved: "Aprobado", rejected: "Descartado", scheduled: "Programado", published: "Publicado",
 };
@@ -154,6 +162,8 @@ export default function PlanificadorRedes() {
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(true);
   const [viewerEmail, setViewerEmail] = useState("");
+  const [published, setPublished] = useState<PublishedPost[]>([]);
+  const [instagramNotice, setInstagramNotice] = useState("");
 
   // Cloudflare Access protege la página y la API: la sesión viaja en su cookie.
   const load = useCallback(async () => {
@@ -170,6 +180,11 @@ export default function PlanificadorRedes() {
     setSelected((current) => current ? result.items.find((item) => item.id === current.id) ?? null : null);
     setNotice(result.items.length ? "" : "Todavía no hay piezas sincronizadas desde la grilla.");
     setLoading(false);
+    // Los posts publicados completan el feed; si fallan, el planificador sigue funcionando.
+    const instagram = await fetch("/api/planner/instagram", { cache: "no-store" }).catch(() => null);
+    const feed = instagram?.ok ? await instagram.json().catch(() => null) as { connected: boolean; posts: PublishedPost[]; error?: string } | null : null;
+    setPublished(feed?.posts ?? []);
+    setInstagramNotice(!feed ? "No fue posible leer los posts publicados de Instagram." : !feed.connected ? "Los posts ya publicados aparecen acá cuando se conecta Instagram (ver SETUP del planificador)." : feed.error ?? "");
   }, []);
 
   useEffect(() => { void load(); }, [load]);
@@ -311,6 +326,11 @@ export default function PlanificadorRedes() {
     const reason = lockReason(item);
     return reason ? <span className="absolute left-2 top-2 z-10 rounded-full bg-dooh-dark/80 px-2.5 py-1 text-[10px] font-bold text-white">🔒 {reason}</span> : <span className="absolute left-2 top-2 z-10 rounded-full bg-dooh-lime px-2.5 py-1 text-[10px] font-bold text-dooh-dark">↕ Arrastrar</span>;
   }
+  // Post que ya está en el perfil: abre la publicación en Instagram.
+  function PublishedCard({ post }: { post: PublishedPost }) {
+    const icon = post.type === "video" ? "M4 4h16v16H4z M10 9l5 3-5 3z" : post.type === "carousel" ? "M8 8h12v12H8z M4 16V4h12" : "";
+    return <a href={post.permalink} target="_blank" rel="noreferrer" className={`group relative block aspect-[3/4] overflow-hidden bg-[#242426] ${ordering ? "pointer-events-none opacity-40" : ""}`}><img src={post.imageUrl} alt={post.caption || "Post publicado en Instagram"} loading="lazy" referrerPolicy="no-referrer" className="h-full w-full object-cover" />{icon && <svg viewBox="0 0 24 24" aria-hidden="true" className="absolute right-2 top-2 h-5 w-5 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,.6)]"><path d={icon} fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /></svg>}<span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 pb-2 pt-8 text-[9px] font-bold uppercase tracking-[.12em] text-white opacity-0 transition-opacity group-hover:opacity-100 sm:px-4 sm:pb-3 sm:text-[10px]">Publicado · {day(post.timestamp)}</span></a>;
+  }
   // Ícono de tipo arriba a la derecha, como en la grilla de Instagram.
   function FeedIcon({ item }: { item: Item }) {
     if (ordering) return null;
@@ -330,12 +350,12 @@ export default function PlanificadorRedes() {
     return <Opener item={item} className={`block h-full w-full overflow-hidden rounded-2xl border border-dooh-dark/10 bg-white text-left ${ordering && lockReason(item) ? "opacity-60" : ""}`}><div className={`relative ${vertical(item) ? "aspect-[9/16]" : "aspect-square"} bg-[#e9ecee]`}><Lock item={item} /><CollectionPreview item={item} /></div><div className="p-4"><div className="flex items-start justify-between gap-3"><p className="text-sm font-bold">{item.piece ? `${item.piece} · ` : ""}{item.project}</p><Status status={item.status} /></div><p className="mt-2 text-xs text-dooh-dark/55">{carousel(item) ? `${item.assets.length} piezas · ` : ""}{day(when)}{ordering ? "" : " · Ver propuesta"}</p><p className="mt-2 text-[11px] font-bold text-dooh-dark/70">{readinessSummary(item)}</p></div></Opener>;
   }
   // Envuelve cada vista: en modo ordenar, las piezas movibles se arrastran; las bloqueadas quedan fijas.
-  function Arrangeable({ view, className, strategy, empty, render }: { view: View; className: string; strategy: "grid" | "row"; empty?: ReactNode; render: (item: Item, when: string | null) => ReactNode }) {
+  function Arrangeable({ view, className, strategy, empty, render, after }: { view: View; className: string; strategy: "grid" | "row"; empty?: ReactNode; render: (item: Item, when: string | null) => ReactNode; after?: ReactNode }) {
     const placed = placements(view);
     const tiles = placed.map(({ item, slot, draggable }) => draggable
       ? <SortableTile key={item.id} id={item.id} className={strategy === "row" ? "shrink-0" : ""}>{render(item, slot.scheduled_at)}</SortableTile>
       : <div key={item.id} className={strategy === "row" ? "shrink-0" : ""}>{render(item, item.scheduled_at)}</div>);
-    const content = <div className={className}>{tiles}{placed.length === 0 && empty}</div>;
+    const content = <div className={className}>{tiles}{placed.length === 0 && !after && empty}{after}</div>;
     if (ordering?.view !== view) return content;
     return <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}><SortableContext items={ordering.order} strategy={strategy === "row" ? horizontalListSortingStrategy : rectSortingStrategy}>{content}</SortableContext></DndContext>;
   }
@@ -357,5 +377,8 @@ export default function PlanificadorRedes() {
   }
 
   const tabButton = (value: "instagram" | "linkedin", label: string) => <button role="tab" aria-selected={tab === value} disabled={Boolean(ordering) && tab !== value} onClick={() => setTab(value)} className={`rounded-full px-5 py-2.5 text-sm font-bold disabled:opacity-40 ${tab === value ? "bg-dooh-dark text-white" : "text-dooh-dark/55"}`}>{label}</button>;
-  return <main className="min-h-screen bg-[#f2f3f4] px-5 py-8 font-sans text-dooh-dark md:px-10 md:py-12"><div className="mx-auto max-w-6xl"><header className="mb-7 flex flex-wrap items-center justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-dooh-dark/45">DOOH · Interno</p><h1 className="mt-1 text-2xl font-bold tracking-tightest">Planificador de redes</h1>{viewerEmail && <p className="mt-1 text-xs text-dooh-dark/55">Sesión: {viewerEmail}</p>}</div><div className="flex gap-2"><button type="button" disabled={Boolean(ordering)} onClick={() => void load()} className="rounded-full border border-dooh-dark/15 bg-white px-4 py-2 text-xs font-bold disabled:opacity-40">Actualizar</button><a href="/cdn-cgi/access/logout" className="rounded-full border border-dooh-dark/15 bg-white px-4 py-2 text-xs font-bold">Salir</a></div></header>{notice && <p className="mb-5 rounded-xl border border-dooh-dark/10 bg-white px-4 py-3 text-sm text-dooh-dark/70">{notice}</p>}{loading ? <p className="py-16 text-center text-sm text-dooh-dark/55">Cargando planificador…</p> : <><div className="inline-flex rounded-full border border-dooh-dark/15 bg-white p-1" role="tablist">{tabButton("instagram", "Instagram")}{tabButton("linkedin", "LinkedIn")}</div>{tab === "instagram" ? <section className="mt-8"><div className="flex items-end justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-dooh-dark/45">Secuencia +24 h</p><h2 className="mt-1 text-2xl font-bold tracking-tightest">Stories</h2></div><div className="flex items-center gap-3"><p className="text-xs text-dooh-dark/55">Desde la grilla sincronizada.</p><OrderButton view="stories" /></div></div><OrderBar view="stories" /><Arrangeable view="stories" strategy="row" className="mt-4 flex gap-4 overflow-x-auto pb-5" render={(item, when) => <StoryCard item={item} when={when} />} /><div className="mt-8 flex items-center justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-dooh-dark/45">Preview visual</p><h2 className="mt-1 text-2xl font-bold tracking-tightest">Instagram feed</h2></div><div className="flex items-center gap-3"><OrderButton view="instagram" /><span className="rounded-full border border-dooh-dark/15 px-3 py-1.5 text-xs text-dooh-dark/60">@dooh.agency</span></div></div><OrderBar view="instagram" /><div className="mt-4 overflow-hidden rounded-[2rem] border-[10px] border-dooh-dark bg-dooh-dark shadow-[0_22px_70px_rgba(5,5,7,.2)]"><div className="flex items-center gap-2 border-b border-white/10 px-5 py-4"><span className="h-7 w-7 rounded-full bg-dooh-lime" /><span className="text-xs font-bold text-white">dooh.agency</span></div><Arrangeable view="instagram" strategy="grid" className="grid grid-cols-3 gap-0.5 bg-dooh-dark" empty={<div className="col-span-full p-10 text-center text-sm text-white/70">No hay piezas de Instagram en la grilla.</div>} render={(item, when) => <Card item={item} when={when} />} /></div></section> : <section className="mt-8"><div className="flex items-end justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-dooh-dark/45">Cola editorial</p><h2 className="mt-1 text-2xl font-bold tracking-tightest">LinkedIn</h2></div><OrderButton view="linkedin" /></div><OrderBar view="linkedin" /><Arrangeable view="linkedin" strategy="grid" className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3" render={(item, when) => <LinkedInCard item={item} when={when} />} /></section>}</>}</div>{selected && <Detail item={selected} />}</main>;
+  const plannedLinks = new Set(items.map((item) => permalinkKey(item.published_url)).filter(Boolean));
+  const publishedPosts = published.filter((post) => !plannedLinks.has(permalinkKey(post.permalink)));
+  const publishedTiles = publishedPosts.length ? publishedPosts.map((post) => <PublishedCard key={post.id} post={post} />) : null;
+  return <main className="min-h-screen bg-[#f2f3f4] px-5 py-8 font-sans text-dooh-dark md:px-10 md:py-12"><div className="mx-auto max-w-6xl"><header className="mb-7 flex flex-wrap items-center justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-dooh-dark/45">DOOH · Interno</p><h1 className="mt-1 text-2xl font-bold tracking-tightest">Planificador de redes</h1>{viewerEmail && <p className="mt-1 text-xs text-dooh-dark/55">Sesión: {viewerEmail}</p>}</div><div className="flex gap-2"><button type="button" disabled={Boolean(ordering)} onClick={() => void load()} className="rounded-full border border-dooh-dark/15 bg-white px-4 py-2 text-xs font-bold disabled:opacity-40">Actualizar</button><a href="/cdn-cgi/access/logout" className="rounded-full border border-dooh-dark/15 bg-white px-4 py-2 text-xs font-bold">Salir</a></div></header>{notice && <p className="mb-5 rounded-xl border border-dooh-dark/10 bg-white px-4 py-3 text-sm text-dooh-dark/70">{notice}</p>}{loading ? <p className="py-16 text-center text-sm text-dooh-dark/55">Cargando planificador…</p> : <><div className="inline-flex rounded-full border border-dooh-dark/15 bg-white p-1" role="tablist">{tabButton("instagram", "Instagram")}{tabButton("linkedin", "LinkedIn")}</div>{tab === "instagram" ? <section className="mt-8"><div className="flex items-end justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-dooh-dark/45">Secuencia +24 h</p><h2 className="mt-1 text-2xl font-bold tracking-tightest">Stories</h2></div><div className="flex items-center gap-3"><p className="text-xs text-dooh-dark/55">Desde la grilla sincronizada.</p><OrderButton view="stories" /></div></div><OrderBar view="stories" /><Arrangeable view="stories" strategy="row" className="mt-4 flex gap-4 overflow-x-auto pb-5" render={(item, when) => <StoryCard item={item} when={when} />} /><div className="mt-8 flex items-center justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-dooh-dark/45">Preview visual</p><h2 className="mt-1 text-2xl font-bold tracking-tightest">Instagram feed</h2></div><div className="flex items-center gap-3"><OrderButton view="instagram" /><span className="rounded-full border border-dooh-dark/15 px-3 py-1.5 text-xs text-dooh-dark/60">@dooh.agency</span></div></div><OrderBar view="instagram" /><div className="mt-4 overflow-hidden rounded-[2rem] border-[10px] border-dooh-dark bg-dooh-dark shadow-[0_22px_70px_rgba(5,5,7,.2)]"><div className="flex items-center gap-2 border-b border-white/10 px-5 py-4"><span className="h-7 w-7 rounded-full bg-dooh-lime" /><span className="text-xs font-bold text-white">dooh.agency</span></div><Arrangeable view="instagram" strategy="grid" className="grid grid-cols-3 gap-0.5 bg-dooh-dark" empty={<div className="col-span-full p-10 text-center text-sm text-white/70">No hay piezas de Instagram en la grilla.</div>} render={(item, when) => <Card item={item} when={when} />} after={publishedTiles} /></div>{instagramNotice && <p className="mt-3 text-xs text-dooh-dark/55">{instagramNotice}</p>}</section> : <section className="mt-8"><div className="flex items-end justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-dooh-dark/45">Cola editorial</p><h2 className="mt-1 text-2xl font-bold tracking-tightest">LinkedIn</h2></div><OrderButton view="linkedin" /></div><OrderBar view="linkedin" /><Arrangeable view="linkedin" strategy="grid" className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3" render={(item, when) => <LinkedInCard item={item} when={when} />} /></section>}</>}</div>{selected && <Detail item={selected} />}</main>;
 }

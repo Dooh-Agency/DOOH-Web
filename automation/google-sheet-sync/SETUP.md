@@ -54,6 +54,20 @@ En **Workers & Pages → dooh-web → Settings → Variables and secrets** (Prod
 
 Las variables se aplican en el siguiente despliegue.
 
+### Posts publicados de Instagram (opcional)
+
+El feed del planificador puede completarse con los últimos 12 posts de `@dooh.agency`, debajo de las piezas planificadas, como se ven en el perfil. Usa la API de Instagram **solo con el permiso de lectura** `instagram_business_basic`: no puede publicar ni comentar. Sin el token, el feed muestra solo la grilla.
+
+Ya configurado: app de Meta **DOOH Planificador Redes Web** (modo desarrollo, negocio DOOH) con el caso de uso de la API de Instagram y `@dooh.agency` (ID `17841455194637699`) como evaluadora de Instagram. Meta asigna a las apps nuevas el **inicio de sesión unificado**, así que el token es de usuario del sistema y no vence.
+
+Para generar o reemplazar el token:
+
+1. En la app, **Inicio de sesión con Facebook para empresas → Configuraciones → Crear configuración**: token de acceso de usuario del sistema que no caduca, activo **Cuentas de Instagram** y solo el permiso `instagram_basic` (más los que Meta marque como obligatorios). No usar la plantilla: pide permisos de publicación, mensajes y anuncios.
+2. En **Casos de uso → API de Instagram → Personalizar → 1. Configurar tu app**, elegir esa configuración. En **2. Generar tokens de acceso**, tocar **Generar token** junto a `dooh.agency` y copiarlo.
+3. En Cloudflare, en las variables de `dooh-web` (Production), guardar el secreto `INSTAGRAM_ACCESS_TOKEN` y volver a desplegar.
+
+La función `/api/planner/instagram` (protegida por Access) guarda la respuesta 3 horas en D1 (tabla `planner_settings`, que crea sola). También acepta un token de usuario de Instagram (empieza con `IG`, vence a los 60 días): en ese caso lo renueva cada 7 días. Si Instagram rechaza el token (por ejemplo, tras cambiar la contraseña), el planificador lo avisa debajo del feed: generar uno nuevo y reemplazar el secreto; el nuevo pisa al guardado. Los posts que ya figuran en la grilla con su `URL publicada` no se repiten.
+
 ### En Apps Script
 
 1. En la grilla, abrir **Extensiones → Apps Script**.
