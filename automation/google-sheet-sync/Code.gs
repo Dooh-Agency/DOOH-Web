@@ -7,7 +7,7 @@
  */
 
 // Versión actual: sincroniza con Cloudflare en lugar de Supabase.
-const PLANNER_SYNC_VERSION = '2026.11.04.3';
+const PLANNER_SYNC_VERSION = '2026.11.05.1';
 
 const PLANNER_CONFIG = {
   sheetName: 'Grilla semanal',
@@ -126,7 +126,8 @@ function syncRow_(api, sourceKey, row, headerIndex, rowNumber) {
 
 /**
  * Endpoint de la aplicación web: el planificador (Pages Function, ya validada
- * por Cloudflare Access) envía aprobaciones y pedidos de cambio. Se publica
+ * por Cloudflare Access) envía aprobaciones, pedidos de cambio y el orden de
+ * publicación armado con drag & drop. Se publica
  * como “Ejecutar como: yo” y “Acceso: cualquier usuario”; solo acepta pedidos
  * con la clave PLANNER_SYNC_SECRET (ver SETUP.md).
  */
@@ -134,7 +135,7 @@ function doPost(e) {
   let result;
   try {
     const request = JSON.parse((e && e.postData && e.postData.contents) || '{}');
-    result = { ok: true, item: reviewAction_(request) };
+    result = { ok: true, item: request.action === 'reorder' ? reorderAction_(request) : reviewAction_(request) };
   } catch (error) {
     result = { ok: false, error: error.message };
   }
@@ -157,16 +158,7 @@ function reviewAction_(request) {
   lock.waitLock(20000);
   try {
     const grid = readGrid_();
-    const [spreadsheetId, sheetId, rowText] = sourceKey.split(':');
-    const rowNumber = Number(rowText);
-    if (!grid || spreadsheetId !== grid.spreadsheet.getId() || Number(sheetId) !== grid.sheet.getSheetId() || !rowNumber) {
-      throw new Error('La pieza no pertenece a esta grilla.');
-    }
-    const row = grid.rawRows[rowNumber - PLANNER_CONFIG.headerRow - 1];
-    // La referencia es la fila: si alguien insertó o movió filas, no se escribe sobre otra pieza.
-    if (!row || value_(row, grid.headerIndex, 'Tema') !== String(request.title || '')) {
-      throw new Error('La grilla cambió desde la última sincronización. Sincronizá y volvé a intentar.');
-    }
+    const { row, rowNumber } = gridRow_(grid, sourceKey, request.title);
 
     const statusColumn = grid.headerIndex['Estado'];
     const notesColumn = grid.headerIndex['Observaciones'];
@@ -189,6 +181,157 @@ function reviewAction_(request) {
   } finally {
     lock.releaseLock();
   }
+}
+
+// Fila de la grilla que corresponde a una pieza del planificador.
+function gridRow_(grid, sourceKey, title) {
+  const [spreadsheetId, sheetId, rowText] = String(sourceKey || '').split(':');
+  const rowNumber = Number(rowText);
+  if (!grid || spreadsheetId !== grid.spreadsheet.getId() || Number(sheetId) !== grid.sheet.getSheetId() || !rowNumber) {
+    throw new Error('La pieza no pertenece a esta grilla.');
+  }
+  const row = grid.rawRows[rowNumber - PLANNER_CONFIG.headerRow - 1];
+  // La referencia es la fila: si alguien insertó o movió filas, no se escribe sobre otra pieza.
+  if (!row || value_(row, grid.headerIndex, 'Tema') !== String(title || '')) {
+    throw new Error('La grilla cambió desde la última sincronización. Sincronizá y volvé a intentar.');
+  }
+  return { row: row, rowNumber: rowNumber };
+}
+
+/**
+ * Orden de publicación armado en el planificador. Cada pieza movida toma `Día` y
+ * `Fecha/hora salida` de la fila indicada (las fechas se intercambian, no se
+ * inventan). Las filas cuya `Pieza relacionada` es una pieza movida (su story y
+ * su adaptación para LinkedIn) se corren los mismos días y conservan su horario. Las piezas
+ * programadas, publicadas o descartadas no se tocan. Cada cambio queda en
+ * `Observaciones` y las filas modificadas se vuelven a sincronizar.
+ */
+function reorderAction_(request) {
+  const api = plannerApi_();
+  if (!sameSecret_(String(request.secret || ''), api.secret)) throw new Error('Clave inválida.');
+  const email = String(request.email || '').trim();
+  if (!email) throw new Error('Falta el email de quien ordena.');
+  const moves = Array.isArray(request.moves) ? request.moves : [];
+  if (!moves.length) throw new Error('No hay cambios de orden para guardar.');
+
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const grid = readGrid_();
+    const headerIndex = grid ? grid.headerIndex : {};
+    const dateColumn = headerIndex['Fecha/hora salida'];
+    const dayColumn = headerIndex['Día'];
+    const notesColumn = headerIndex['Observaciones'];
+    if (dateColumn === undefined || notesColumn === undefined) {
+      throw new Error('Faltan los encabezados “Fecha/hora salida” u “Observaciones” en la grilla.');
+    }
+    const timeZone = grid.spreadsheet.getSpreadsheetTimeZone();
+    const locked = (row) => ['scheduled', 'published', 'rejected'].indexOf(normalizeStatus_(value_(row, headerIndex, 'Estado'))) !== -1;
+
+    // Se leen todas las fechas antes de escribir, porque las piezas intercambian lugares.
+    const changes = new Map();
+    const movedPieces = [];
+    moves.forEach((move) => {
+      const target = gridRow_(grid, move.source_key, move.title);
+      const source = gridRow_(grid, move.from_source_key, move.from_title);
+      if (locked(target.row)) {
+        throw new Error(`“${move.title}” está programada, publicada o descartada: no se puede mover.`);
+      }
+      if (!source.row[dateColumn]) throw new Error(`“${move.from_title}” no tiene fecha en la grilla.`);
+      if (changes.has(target.rowNumber)) throw new Error('Una pieza aparece dos veces en el pedido.');
+      changes.set(target.rowNumber, {
+        row: target.row,
+        previous: target.row[dateColumn],
+        date: source.row[dateColumn],
+        day: dayColumn === undefined ? undefined : source.row[dayColumn],
+      });
+      movedPieces.push(target.rowNumber);
+    });
+
+    // La story y la adaptación de cada pieza se corren con ella.
+    let followed = 0;
+    if (headerIndex['Pieza relacionada'] !== undefined) {
+      movedPieces.forEach((rowNumber) => {
+        const change = changes.get(rowNumber);
+        const piece = value_(change.row, headerIndex, 'Pieza').toLowerCase();
+        const before = naiveTime_(change.previous, timeZone);
+        const after = naiveTime_(change.date, timeZone);
+        // Se corren días enteros: cada pieza asociada conserva su propio horario.
+        const day = 24 * 60 * 60 * 1000;
+        const delta = before === null || after === null ? 0 : Math.round((after - after % day - (before - before % day)) / day) * day;
+        if (!piece || !delta) return;
+        grid.rawRows.forEach((row, offset) => {
+          const relatedRow = PLANNER_CONFIG.headerRow + 1 + offset;
+          if (changes.has(relatedRow) || locked(row)) return;
+          if (value_(row, headerIndex, 'Pieza relacionada').toLowerCase() !== piece) return;
+          const current = naiveTime_(row[dateColumn], timeZone);
+          if (current === null) return;
+          const shifted = current + delta;
+          changes.set(relatedRow, {
+            row: row,
+            previous: row[dateColumn],
+            date: shiftedDate_(row[dateColumn], delta),
+            day: dayColumn === undefined || !value_(row, headerIndex, 'Día') ? undefined : dayLabel_(shifted),
+          });
+          followed += 1;
+        });
+      });
+    }
+
+    const stamp = Utilities.formatDate(new Date(), PLANNER_CONFIG.timeZone, 'yyyy-MM-dd HH:mm');
+    changes.forEach((change, rowNumber) => {
+      const entry = `${stamp} · ${email} · Reordenado: ${dateText_(change.previous, timeZone)} → ${dateText_(change.date, timeZone)}`;
+      const previousNotes = value_(change.row, headerIndex, 'Observaciones');
+      const notes = previousNotes ? `${entry}\n${previousNotes}` : entry;
+      grid.sheet.getRange(rowNumber, dateColumn + 1).setValue(change.date);
+      if (change.day !== undefined) grid.sheet.getRange(rowNumber, dayColumn + 1).setValue(change.day);
+      grid.sheet.getRange(rowNumber, notesColumn + 1).setValue(notes);
+      change.row[notesColumn] = notes;
+    });
+    SpreadsheetApp.flush();
+
+    // Se releen las filas para sincronizar lo que quedó escrito (Sheets puede convertir textos en fechas).
+    const updated = readGrid_();
+    changes.forEach((change, rowNumber) => {
+      const row = updated.rawRows[rowNumber - PLANNER_CONFIG.headerRow - 1];
+      syncRow_(api, `${updated.spreadsheet.getId()}:${updated.sheet.getSheetId()}:${rowNumber}`, row, updated.headerIndex, rowNumber);
+    });
+    return { moved: movedPieces.length, followed: followed };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// Fecha y hora “de reloj” en milisegundos, sin zona horaria, para calcular desplazamientos.
+function naiveTime_(value, timeZone) {
+  if (!value) return null;
+  const text = value instanceof Date ? Utilities.formatDate(value, timeZone, 'yyyy-MM-dd HH:mm') : String(value).trim();
+  const match = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2}))?/);
+  if (!match) return null;
+  return Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]), Number(match[4] || 0), Number(match[5] || 0));
+}
+
+// Corre una fecha de la grilla conservando su tipo: fecha de Sheets o texto `AAAA-MM-DD HH:MM`.
+function shiftedDate_(value, delta) {
+  if (value instanceof Date) return new Date(value.getTime() + delta);
+  const text = String(value).trim();
+  const shifted = new Date(naiveTime_(text, PLANNER_CONFIG.timeZone) + delta);
+  const pad = (number) => String(number).padStart(2, '0');
+  const date = `${shifted.getUTCFullYear()}-${pad(shifted.getUTCMonth() + 1)}-${pad(shifted.getUTCDate())}`;
+  return /\d{1,2}:\d{2}/.test(text) ? `${date} ${pad(shifted.getUTCHours())}:${pad(shifted.getUTCMinutes())}` : date;
+}
+
+// “Lunes 09/11”, el formato de la columna `Día`.
+function dayLabel_(time) {
+  const names = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const date = new Date(time);
+  const pad = (number) => String(number).padStart(2, '0');
+  return `${names[date.getUTCDay()]} ${pad(date.getUTCDate())}/${pad(date.getUTCMonth() + 1)}`;
+}
+
+function dateText_(value, timeZone) {
+  if (!value) return 'sin fecha';
+  return value instanceof Date ? Utilities.formatDate(value, timeZone, 'yyyy-MM-dd HH:mm') : String(value).trim();
 }
 
 function plannerApi_() {

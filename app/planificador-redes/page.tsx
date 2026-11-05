@@ -1,6 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { DndContext, KeyboardSensor, MouseSensor, TouchSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, arrayMove, horizontalListSortingStrategy, rectSortingStrategy, sortableKeyboardCoordinates, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 type Channel = "instagram" | "linkedin" | "both";
 type PlannerStatus = "draft" | "review" | "changes_requested" | "approved" | "rejected" | "scheduled" | "published";
@@ -52,6 +55,29 @@ function day(value: string | null) {
 }
 function compactCopy(copy: string) { return copy.replace(/\n{2,}/g, "\n").trim(); }
 function released(item: Item) { return item.status === "scheduled" || item.status === "published"; }
+function time(item: Item) {
+  const value = item.scheduled_at ? new Date(item.scheduled_at).getTime() : NaN;
+  return Number.isNaN(value) ? null : value;
+}
+// Orden de cada vista: el feed de Instagram va de la más nueva a la más vieja, como en el perfil;
+// stories y LinkedIn van en orden de salida. Las piezas sin fecha quedan al final.
+function byDate(direction: 1 | -1) {
+  return (a: Item, b: Item) => {
+    const first = time(a);
+    const second = time(b);
+    if (first === null || second === null) return first === second ? b.sort_order - a.sort_order : first === null ? 1 : -1;
+    return (first - second) * direction || b.sort_order - a.sort_order;
+  };
+}
+// Solo se reordenan piezas con fecha que todavía no se cargaron en las redes.
+function lockReason(item: Item) {
+  if (item.status === "published") return "Publicada";
+  if (item.status === "scheduled") return "Programada";
+  if (item.status === "rejected") return "Descartada";
+  if (time(item) === null) return "Sin fecha";
+  return "";
+}
+function movable(item: Item) { return !lockReason(item); }
 // Lo que necesita una pieza para salir: el mismo criterio que la regla de publicación de la grilla.
 function readiness(item: Item) {
   return [
@@ -107,6 +133,18 @@ function ReviewPanel({ item, onReview }: { item: Item; onReview: (action: Review
   </div>;
 }
 
+type View = "stories" | "instagram" | "linkedin";
+type Ordering = { view: View; original: string[]; order: string[] };
+// Cada posición de la vista conserva su fecha: al reordenar, la pieza toma la fecha del lugar
+// donde se suelta (`slot`), y la pieza que estaba ahí pasa al lugar siguiente.
+type Placement = { item: Item; slot: Item; draggable: boolean };
+
+// Definido fuera del componente principal para que el arrastre no se reinicie en cada render.
+function SortableTile({ id, className = "", children }: { id: string; className?: string; children: ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  return <div ref={setNodeRef} style={{ transform: CSS.Translate.toString(transform), transition }} className={`${className} relative cursor-grab touch-manipulation select-none active:cursor-grabbing ${isDragging ? "z-20 opacity-80 shadow-2xl ring-4 ring-dooh-lime" : ""}`} {...attributes} {...listeners}>{children}</div>;
+}
+
 export default function PlanificadorRedes() {
   const [items, setItems] = useState<Item[]>([]);
   const [selected, setSelected] = useState<Item | null>(null);
@@ -151,9 +189,85 @@ export default function PlanificadorRedes() {
     return null;
   }
 
-  const stories = useMemo(() => items.filter(story), [items]);
-  const instagram = useMemo(() => items.filter((item) => !story(item) && item.channel !== "linkedin"), [items]);
-  const linkedin = useMemo(() => items.filter((item) => !story(item) && item.channel !== "instagram"), [items]);
+  const stories = useMemo(() => items.filter(story).sort(byDate(1)), [items]);
+  const instagram = useMemo(() => items.filter((item) => !story(item) && item.channel !== "linkedin").sort(byDate(-1)), [items]);
+  const linkedin = useMemo(() => items.filter((item) => !story(item) && item.channel !== "instagram").sort(byDate(1)), [items]);
+  const lists: Record<View, Item[]> = { stories, instagram, linkedin };
+
+  const [ordering, setOrdering] = useState<Ordering | null>(null);
+  const [savingOrder, setSavingOrder] = useState(false);
+  const [orderError, setOrderError] = useState("");
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    // En el celular hay que mantener apretado un instante para arrastrar; si no, la página se desplaza.
+    useSensor(TouchSensor, { activationConstraint: { delay: 220, tolerance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  function startOrdering(view: View) {
+    const ids = lists[view].filter(movable).map((item) => item.id);
+    setOrdering({ view, original: ids, order: ids });
+    setOrderError("");
+    setSelected(null);
+  }
+  function cancelOrdering() {
+    setOrdering(null);
+    setOrderError("");
+  }
+  function placements(view: View): Placement[] {
+    const list = lists[view];
+    if (ordering?.view !== view) return list.map((item) => ({ item, slot: item, draggable: false }));
+    const byId = new Map(list.map((item) => [item.id, item]));
+    let position = 0;
+    return list.map((slot) => {
+      if (!movable(slot)) return { item: slot, slot, draggable: false };
+      const item = byId.get(ordering.order[position]) ?? slot;
+      position += 1;
+      return { item, slot, draggable: true };
+    });
+  }
+  function onDragEnd({ active, over }: DragEndEvent) {
+    if (!over || active.id === over.id) return;
+    setOrdering((current) => {
+      if (!current) return current;
+      const from = current.order.indexOf(String(active.id));
+      const to = current.order.indexOf(String(over.id));
+      return from === -1 || to === -1 ? current : { ...current, order: arrayMove(current.order, from, to) };
+    });
+  }
+  const orderChanged = Boolean(ordering && ordering.order.some((id, index) => id !== ordering.original[index]));
+
+  // Cada pieza movida toma la fecha de la que estaba en ese lugar. La grilla también corre
+  // la story y la adaptación de LinkedIn asociadas (`Pieza relacionada`).
+  async function saveOrder() {
+    if (!ordering || !orderChanged) return;
+    const moves = ordering.order
+      .map((id, index) => ({ item_id: id, from_item_id: ordering.original[index] }))
+      .filter((move) => move.item_id !== move.from_item_id);
+    setSavingOrder(true);
+    setOrderError("");
+    try {
+      const response = await fetch("/api/planner/reorder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ moves }),
+      });
+      const result = await response.json() as { ok?: boolean; error?: string; moved?: number; followed?: number };
+      if (!result.ok) {
+        setOrderError(result.error ?? "No fue posible guardar el orden.");
+        setSavingOrder(false);
+        return;
+      }
+      setOrdering(null);
+      setSavingOrder(false);
+      await load();
+      const followed = result.followed ? ` y ${result.followed} ${result.followed === 1 ? "pieza asociada" : "piezas asociadas"}` : "";
+      setNotice(`Orden guardado en la grilla: ${result.moved ?? moves.length} ${moves.length === 1 ? "pieza" : "piezas"}${followed} con fecha nueva.`);
+    } catch {
+      setOrderError("No fue posible conectar con la grilla. Probá de nuevo.");
+      setSavingOrder(false);
+    }
+  }
 
   function Media({ asset, alt, poster = "", controls = true, contain = false }: { asset: Asset; alt: string; poster?: string; controls?: boolean; contain?: boolean }) {
     if (!asset.previewUrl) return <div className="flex h-full w-full items-center justify-center bg-[#e9ecee] p-4 text-center text-xs text-dooh-dark/50">Vista previa no disponible.</div>;
@@ -185,9 +299,46 @@ export default function PlanificadorRedes() {
     const visibleAssets = assets.slice(0, 4);
     return <div className="grid h-full w-full grid-cols-2 grid-rows-2 gap-px bg-white/20">{visibleAssets.map((asset, index) => <div key={asset.id} className="relative min-h-0 overflow-hidden bg-[#242426]"><Media asset={asset} alt={`${item.project} · pieza ${index + 1}`} controls={false} />{index === 3 && assets.length > 4 && <span className="absolute inset-0 flex items-center justify-center bg-black/55 text-lg font-bold text-white">+{assets.length - 4}</span>}</div>)}</div>;
   }
-  function Card({ item }: { item: Item }) {
+  // En modo ordenar, la tarjeta no abre el detalle y muestra la fecha del lugar que ocupa.
+  function Opener({ item, className, children }: { item: Item; className: string; children: ReactNode }) {
+    if (ordering) return <div className={className}>{children}</div>;
+    return <button type="button" onClick={() => setSelected(item)} className={`${className} focus:outline-none focus:ring-4 focus:ring-dooh-lime`}>{children}</button>;
+  }
+  function Lock({ item }: { item: Item }) {
+    if (!ordering) return null;
+    const reason = lockReason(item);
+    return reason ? <span className="absolute left-2 top-2 z-10 rounded-full bg-dooh-dark/80 px-2.5 py-1 text-[10px] font-bold text-white">🔒 {reason}</span> : <span className="absolute left-2 top-2 z-10 rounded-full bg-dooh-lime px-2.5 py-1 text-[10px] font-bold text-dooh-dark">↕ Arrastrar</span>;
+  }
+  function Card({ item, when }: { item: Item; when: string | null }) {
     const aspect = vertical(item) ? "aspect-[9/16]" : "aspect-square";
-    return <button type="button" onClick={() => setSelected(item)} className="group overflow-hidden bg-[#e9ecee] text-left focus:outline-none focus:ring-4 focus:ring-dooh-lime"><div className={`relative ${aspect}`}><Preview item={item} /><div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent px-4 pb-3 pt-10 text-white"><p className="text-[10px] font-bold uppercase tracking-[.12em]">{item.project}</p><p className="mt-0.5 text-[9px] text-white/70">{carousel(item) ? `${item.assets.length} piezas · ` : ""}{day(item.scheduled_at)} · Ver propuesta</p><p className="mt-1 text-[9px] font-bold text-dooh-lime">{readinessSummary(item)}</p></div></div></button>;
+    return <Opener item={item} className={`group block h-full w-full overflow-hidden bg-[#e9ecee] text-left ${ordering && lockReason(item) ? "opacity-60" : ""}`}><div className={`relative ${aspect}`}><Lock item={item} /><Preview item={item} /><div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent px-4 pb-3 pt-10 text-white"><p className="text-[10px] font-bold uppercase tracking-[.12em]">{item.piece ? `${item.piece} · ` : ""}{item.project}</p><p className="mt-0.5 text-[9px] text-white/70">{carousel(item) ? `${item.assets.length} piezas · ` : ""}{day(when)}{ordering ? "" : " · Ver propuesta"}</p><p className="mt-1 text-[9px] font-bold text-dooh-lime">{readinessSummary(item)}</p></div></div></Opener>;
+  }
+  function StoryCard({ item, when }: { item: Item; when: string | null }) {
+    return <article className={`w-[11.5rem] shrink-0 overflow-hidden rounded-2xl border border-dooh-dark/10 bg-white ${ordering && lockReason(item) ? "opacity-60" : ""}`}><div className="relative aspect-[9/16] bg-[#e9ecee]"><Lock item={item} /><Preview item={item} controls={!ordering} /></div><Opener item={item} className="block w-full p-3 text-left"><p className="text-[10px] font-bold uppercase tracking-[.14em] text-dooh-dark/45">Story IG{item.piece ? ` · ${item.piece}` : ""}</p><p className="mt-2 text-sm font-bold">{item.project}</p><p className="mt-1 text-xs text-dooh-dark/55">{day(when)}{ordering ? "" : " · Ver detalle"}</p><p className="mt-2 text-[11px] font-bold text-dooh-dark/70">{readinessSummary(item)}</p></Opener></article>;
+  }
+  function LinkedInCard({ item, when }: { item: Item; when: string | null }) {
+    return <Opener item={item} className={`block h-full w-full overflow-hidden rounded-2xl border border-dooh-dark/10 bg-white text-left ${ordering && lockReason(item) ? "opacity-60" : ""}`}><div className={`relative ${vertical(item) ? "aspect-[9/16]" : "aspect-square"} bg-[#e9ecee]`}><Lock item={item} /><CollectionPreview item={item} /></div><div className="p-4"><div className="flex items-start justify-between gap-3"><p className="text-sm font-bold">{item.piece ? `${item.piece} · ` : ""}{item.project}</p><Status status={item.status} /></div><p className="mt-2 text-xs text-dooh-dark/55">{carousel(item) ? `${item.assets.length} piezas · ` : ""}{day(when)}{ordering ? "" : " · Ver propuesta"}</p><p className="mt-2 text-[11px] font-bold text-dooh-dark/70">{readinessSummary(item)}</p></div></Opener>;
+  }
+  // Envuelve cada vista: en modo ordenar, las piezas movibles se arrastran; las bloqueadas quedan fijas.
+  function Arrangeable({ view, className, strategy, empty, render }: { view: View; className: string; strategy: "grid" | "row"; empty?: ReactNode; render: (item: Item, when: string | null) => ReactNode }) {
+    const placed = placements(view);
+    const tiles = placed.map(({ item, slot, draggable }) => draggable
+      ? <SortableTile key={item.id} id={item.id} className={strategy === "row" ? "shrink-0" : ""}>{render(item, slot.scheduled_at)}</SortableTile>
+      : <div key={item.id} className={strategy === "row" ? "shrink-0" : ""}>{render(item, item.scheduled_at)}</div>);
+    const content = <div className={className}>{tiles}{placed.length === 0 && empty}</div>;
+    if (ordering?.view !== view) return content;
+    return <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}><SortableContext items={ordering.order} strategy={strategy === "row" ? horizontalListSortingStrategy : rectSortingStrategy}>{content}</SortableContext></DndContext>;
+  }
+  // Botón para entrar al modo ordenar y barra para guardar o cancelar.
+  function OrderButton({ view }: { view: View }) {
+    if (ordering || lists[view].filter(movable).length < 2) return null;
+    return <button type="button" onClick={() => startOrdering(view)} className="rounded-full border border-dooh-dark/15 bg-white px-4 py-2 text-xs font-bold hover:bg-dooh-lime">Ordenar</button>;
+  }
+  function OrderBar({ view }: { view: View }) {
+    if (ordering?.view === view) {
+      return <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-dooh-dark/15 bg-white p-3 pl-4"><p className="mr-auto text-xs text-dooh-dark/70">Arrastrá las piezas al lugar donde querés que salgan. Cada una toma la fecha de ese lugar; las de 🔒 quedan fijas.{view !== "linkedin" && view !== "stories" ? " La story y la adaptación de LinkedIn de cada pieza se corren con ella." : ""}</p><button type="button" disabled={savingOrder || !orderChanged} onClick={() => void saveOrder()} className="rounded-full bg-dooh-lime px-5 py-2.5 text-sm font-bold text-dooh-dark disabled:opacity-50">{savingOrder ? "Guardando en la grilla…" : "Guardar orden"}</button><button type="button" disabled={savingOrder} onClick={cancelOrdering} className="rounded-full border border-dooh-dark/15 bg-white px-5 py-2.5 text-sm font-bold disabled:opacity-50">Cancelar</button>{orderError && <p className="w-full text-sm text-red-700">{orderError}</p>}</div>;
+    }
+    return null;
   }
   function Detail({ item }: { item: Item }) {
     const media = item.assets;
@@ -195,5 +346,6 @@ export default function PlanificadorRedes() {
     return <div className="fixed inset-0 z-50 flex items-center justify-center bg-dooh-dark/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true"><article data-lenis-prevent className="planner-modal-scroll relative h-[calc(100dvh-2rem)] w-full max-w-5xl overflow-y-scroll overscroll-contain rounded-3xl bg-white p-6 pr-4 shadow-2xl md:p-10 md:pr-8"><button type="button" onClick={() => setSelected(null)} className="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-full border border-dooh-dark/15 text-xl hover:bg-dooh-lime" aria-label="Cerrar">×</button><div className="pr-12"><p className="text-[10px] font-bold uppercase tracking-[.18em] text-dooh-dark/45">{item.format}</p><div className="mt-3 flex flex-wrap items-start justify-between gap-4"><div><h2 className="text-2xl font-bold tracking-tightest md:text-4xl">{item.project} — {item.title}</h2><p className="mt-2 text-sm text-dooh-dark/55">Salida propuesta: {day(item.scheduled_at)}</p></div><Status status={item.status} /></div></div><section className="mt-7"><p className="text-[10px] font-bold uppercase tracking-[.16em] text-dooh-dark/45">Para salir</p><div className="mt-3"><Readiness item={item} /></div>{item.status === "published" && item.published_url && <a href={item.published_url} target="_blank" rel="noreferrer" className="mt-3 inline-block text-sm font-bold underline">Ver publicación</a>}{!released(item) && <div className="mt-4"><ReviewPanel key={item.id} item={item} onReview={(action, comment) => review(item, action, comment)} /></div>}</section><section className="mt-7"><div className="flex items-center justify-between"><p className="text-[10px] font-bold uppercase tracking-[.16em] text-dooh-dark/45">Piezas de la publicación</p><p className="text-xs text-dooh-dark/55">{media.length ? `${media.length} ${media.length === 1 ? "pieza" : "piezas"}` : "Sin piezas"}</p></div>{media.length > 0 && <div className="mt-3 flex snap-x snap-mandatory gap-2 overflow-x-auto rounded-2xl bg-dooh-dark p-2 pb-4">{media.map((asset, index) => <div key={asset.id} className={`shrink-0 snap-start overflow-hidden rounded-xl bg-black ${previewAspect}`}><Media asset={asset} alt={`${item.project} · pieza ${index + 1}`} poster={index === 0 ? item.previewUrl : ""} contain /></div>)}</div>}<p className="mt-3 text-xs text-dooh-dark/55">Deslizá horizontalmente para revisar todas las piezas y hacia abajo para ver el contenido de la publicación.</p></section><section className="mt-7 border-t border-dooh-dark/10 pt-6"><p className="text-[10px] font-bold uppercase tracking-[.16em] text-dooh-dark/45">Información de la grilla</p><p className="mt-2 text-sm text-dooh-dark/60">Los textos se editan en la grilla semanal; la aprobación y los pedidos de cambio se guardan ahí automáticamente.</p>{item.canva_url && <a href={item.canva_url} target="_blank" rel="noreferrer" className="mt-3 inline-block rounded-full border border-dooh-dark/15 px-4 py-2 text-xs font-bold hover:bg-dooh-lime">Abrir diseño en Canva</a>}<div className="mt-5 grid gap-4 md:grid-cols-2"><div><p className="text-xs font-bold">Estado</p><p className="mt-1 text-sm text-dooh-dark/70">{labels[item.status]}</p></div><div><p className="text-xs font-bold">Call to action</p><p className="mt-1 text-sm text-dooh-dark/70">{item.call_to_action || "Sin definir"}</p></div><div className="md:col-span-2"><p className="text-xs font-bold">Copy ES</p><p className="mt-1 whitespace-pre-line text-sm leading-snug text-dooh-dark/70">{compactCopy(item.caption_es) || "Sin definir"}</p></div><div className="md:col-span-2"><p className="text-xs font-bold">Copy EN</p><p className="mt-1 whitespace-pre-line text-sm leading-snug text-dooh-dark/70">{compactCopy(item.caption_en) || "Sin definir"}</p></div>{item.review_notes && <div className="md:col-span-2"><p className="text-xs font-bold">Historial de revisión</p><p className="mt-1 whitespace-pre-line text-sm leading-snug text-dooh-dark/70">{item.review_notes}</p></div>}<div className="md:col-span-2"><p className="text-xs font-bold">Dirección visual</p><p className="mt-1 whitespace-pre-line text-sm leading-snug text-dooh-dark/70">{compactCopy(item.creative_direction) || "Sin definir"}</p></div></div></section></article></div>;
   }
 
-  return <main className="min-h-screen bg-[#f2f3f4] px-5 py-8 font-sans text-dooh-dark md:px-10 md:py-12"><div className="mx-auto max-w-6xl"><header className="mb-7 flex flex-wrap items-center justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-dooh-dark/45">DOOH · Interno</p><h1 className="mt-1 text-2xl font-bold tracking-tightest">Planificador de redes</h1>{viewerEmail && <p className="mt-1 text-xs text-dooh-dark/55">Sesión: {viewerEmail}</p>}</div><div className="flex gap-2"><button type="button" onClick={() => void load()} className="rounded-full border border-dooh-dark/15 bg-white px-4 py-2 text-xs font-bold">Actualizar</button><a href="/cdn-cgi/access/logout" className="rounded-full border border-dooh-dark/15 bg-white px-4 py-2 text-xs font-bold">Salir</a></div></header>{notice && <p className="mb-5 rounded-xl border border-dooh-dark/10 bg-white px-4 py-3 text-sm text-dooh-dark/70">{notice}</p>}{loading ? <p className="py-16 text-center text-sm text-dooh-dark/55">Cargando planificador…</p> : <><div className="inline-flex rounded-full border border-dooh-dark/15 bg-white p-1" role="tablist"><button role="tab" aria-selected={tab === "instagram"} onClick={() => setTab("instagram")} className={`rounded-full px-5 py-2.5 text-sm font-bold ${tab === "instagram" ? "bg-dooh-dark text-white" : "text-dooh-dark/55"}`}>Instagram</button><button role="tab" aria-selected={tab === "linkedin"} onClick={() => setTab("linkedin")} className={`rounded-full px-5 py-2.5 text-sm font-bold ${tab === "linkedin" ? "bg-dooh-dark text-white" : "text-dooh-dark/55"}`}>LinkedIn</button></div>{tab === "instagram" ? <section className="mt-8"><div className="flex items-end justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-dooh-dark/45">Secuencia +24 h</p><h2 className="mt-1 text-2xl font-bold tracking-tightest">Stories</h2></div><p className="text-xs text-dooh-dark/55">Desde la grilla sincronizada.</p></div><div className="mt-4 flex gap-4 overflow-x-auto pb-5">{stories.map((item) => <article key={item.id} className="w-[11.5rem] shrink-0 overflow-hidden rounded-2xl border border-dooh-dark/10 bg-white"><div className="aspect-[9/16] bg-[#e9ecee]"><Preview item={item} controls /></div><button type="button" onClick={() => setSelected(item)} className="block w-full p-3 text-left focus:outline-none focus:ring-4 focus:ring-inset focus:ring-dooh-lime"><p className="text-[10px] font-bold uppercase tracking-[.14em] text-dooh-dark/45">Story IG</p><p className="mt-2 text-sm font-bold">{item.project}</p><p className="mt-1 text-xs text-dooh-dark/55">{day(item.scheduled_at)} · Ver detalle</p><p className="mt-2 text-[11px] font-bold text-dooh-dark/70">{readinessSummary(item)}</p></button></article>)}</div><div className="mt-8 flex items-center justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-dooh-dark/45">Preview visual</p><h2 className="mt-1 text-2xl font-bold tracking-tightest">Instagram feed</h2></div><span className="rounded-full border border-dooh-dark/15 px-3 py-1.5 text-xs text-dooh-dark/60">@dooh.agency</span></div><div className="mt-4 overflow-hidden rounded-[2rem] border-[10px] border-dooh-dark bg-dooh-dark shadow-[0_22px_70px_rgba(5,5,7,.2)]"><div className="flex items-center gap-2 border-b border-white/10 px-5 py-4"><span className="h-7 w-7 rounded-full bg-dooh-lime" /><span className="text-xs font-bold text-white">dooh.agency</span></div><div className="grid grid-cols-2 gap-px bg-white/10 sm:grid-cols-3">{instagram.map((item) => <Card key={item.id} item={item} />)}{instagram.length === 0 && <div className="col-span-full p-10 text-center text-sm text-white/70">No hay piezas de Instagram en la grilla.</div>}</div></div></section> : <section className="mt-8"><p className="text-[10px] font-bold uppercase tracking-[.2em] text-dooh-dark/45">Cola editorial</p><h2 className="mt-1 text-2xl font-bold tracking-tightest">LinkedIn</h2><div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{linkedin.map((item) => <button key={item.id} type="button" onClick={() => setSelected(item)} className="overflow-hidden rounded-2xl border border-dooh-dark/10 bg-white text-left"><div className={`${vertical(item) ? "aspect-[9/16]" : "aspect-square"} bg-[#e9ecee]`}><CollectionPreview item={item} /></div><div className="p-4"><div className="flex items-start justify-between gap-3"><p className="text-sm font-bold">{item.project}</p><Status status={item.status} /></div><p className="mt-2 text-xs text-dooh-dark/55">{carousel(item) ? `${item.assets.length} piezas · ` : ""}{day(item.scheduled_at)} · Ver propuesta</p><p className="mt-2 text-[11px] font-bold text-dooh-dark/70">{readinessSummary(item)}</p></div></button>)}</div></section>}</>}</div>{selected && <Detail item={selected} />}</main>;
+  const tabButton = (value: "instagram" | "linkedin", label: string) => <button role="tab" aria-selected={tab === value} disabled={Boolean(ordering) && tab !== value} onClick={() => setTab(value)} className={`rounded-full px-5 py-2.5 text-sm font-bold disabled:opacity-40 ${tab === value ? "bg-dooh-dark text-white" : "text-dooh-dark/55"}`}>{label}</button>;
+  return <main className="min-h-screen bg-[#f2f3f4] px-5 py-8 font-sans text-dooh-dark md:px-10 md:py-12"><div className="mx-auto max-w-6xl"><header className="mb-7 flex flex-wrap items-center justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-dooh-dark/45">DOOH · Interno</p><h1 className="mt-1 text-2xl font-bold tracking-tightest">Planificador de redes</h1>{viewerEmail && <p className="mt-1 text-xs text-dooh-dark/55">Sesión: {viewerEmail}</p>}</div><div className="flex gap-2"><button type="button" disabled={Boolean(ordering)} onClick={() => void load()} className="rounded-full border border-dooh-dark/15 bg-white px-4 py-2 text-xs font-bold disabled:opacity-40">Actualizar</button><a href="/cdn-cgi/access/logout" className="rounded-full border border-dooh-dark/15 bg-white px-4 py-2 text-xs font-bold">Salir</a></div></header>{notice && <p className="mb-5 rounded-xl border border-dooh-dark/10 bg-white px-4 py-3 text-sm text-dooh-dark/70">{notice}</p>}{loading ? <p className="py-16 text-center text-sm text-dooh-dark/55">Cargando planificador…</p> : <><div className="inline-flex rounded-full border border-dooh-dark/15 bg-white p-1" role="tablist">{tabButton("instagram", "Instagram")}{tabButton("linkedin", "LinkedIn")}</div>{tab === "instagram" ? <section className="mt-8"><div className="flex items-end justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-dooh-dark/45">Secuencia +24 h</p><h2 className="mt-1 text-2xl font-bold tracking-tightest">Stories</h2></div><div className="flex items-center gap-3"><p className="text-xs text-dooh-dark/55">Desde la grilla sincronizada.</p><OrderButton view="stories" /></div></div><OrderBar view="stories" /><Arrangeable view="stories" strategy="row" className="mt-4 flex gap-4 overflow-x-auto pb-5" render={(item, when) => <StoryCard item={item} when={when} />} /><div className="mt-8 flex items-center justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-dooh-dark/45">Preview visual</p><h2 className="mt-1 text-2xl font-bold tracking-tightest">Instagram feed</h2></div><div className="flex items-center gap-3"><OrderButton view="instagram" /><span className="rounded-full border border-dooh-dark/15 px-3 py-1.5 text-xs text-dooh-dark/60">@dooh.agency</span></div></div><OrderBar view="instagram" /><div className="mt-4 overflow-hidden rounded-[2rem] border-[10px] border-dooh-dark bg-dooh-dark shadow-[0_22px_70px_rgba(5,5,7,.2)]"><div className="flex items-center gap-2 border-b border-white/10 px-5 py-4"><span className="h-7 w-7 rounded-full bg-dooh-lime" /><span className="text-xs font-bold text-white">dooh.agency</span></div><Arrangeable view="instagram" strategy="grid" className="grid grid-cols-2 gap-px bg-white/10 sm:grid-cols-3" empty={<div className="col-span-full p-10 text-center text-sm text-white/70">No hay piezas de Instagram en la grilla.</div>} render={(item, when) => <Card item={item} when={when} />} /></div></section> : <section className="mt-8"><div className="flex items-end justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[.2em] text-dooh-dark/45">Cola editorial</p><h2 className="mt-1 text-2xl font-bold tracking-tightest">LinkedIn</h2></div><OrderButton view="linkedin" /></div><OrderBar view="linkedin" /><Arrangeable view="linkedin" strategy="grid" className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3" render={(item, when) => <LinkedInCard item={item} when={when} />} /></section>}</>}</div>{selected && <Detail item={selected} />}</main>;
 }

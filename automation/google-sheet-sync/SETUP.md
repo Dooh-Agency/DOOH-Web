@@ -68,7 +68,7 @@ Las variables se aplican en el siguiente despliegue.
    Opcional: `DRIVE_ASSETS_FOLDER_ID` → el ID de la carpeta de Drive donde se crearán las carpetas de cada pieza. Si no se define, el script crea (o reutiliza) una carpeta `Assets finales` junto a la planilla y guarda su ID automáticamente.
 4. **Implementar → Nueva implementación → Aplicación web**, con **Ejecutar como: yo** y **Quién tiene acceso: cualquier usuario**. Autorizar los permisos y copiar la URL que termina en `/exec` en `PLANNER_ACTIONS_URL` de Cloudflare.
 
-   “Cualquier usuario” es necesario para que Cloudflare pueda llamarla; no da acceso a la grilla. Solo acepta pedidos con `PLANNER_SYNC_SECRET`, solo cambia `Estado` y `Observaciones` de una pieza ya sincronizada y no toca piezas programadas o publicadas.
+   “Cualquier usuario” es necesario para que Cloudflare pueda llamarla; no da acceso a la grilla. Solo acepta pedidos con `PLANNER_SYNC_SECRET`, solo cambia `Estado`, `Observaciones`, `Día` y `Fecha/hora salida` de piezas ya sincronizadas y no toca piezas programadas o publicadas.
 5. Volver a la grilla y ejecutar **Planificador DOOH → Sincronizar con el planificador**. Aceptar los permisos solicitados por Google.
 6. Activar **Planificador DOOH → Activar sincronización cada hora**.
 
@@ -88,6 +88,18 @@ En el planificador, **Actualizar** recarga lo último sincronizado.
 ### Aprobar y pedir cambios
 
 Cada pieza muestra qué le falta para salir (copy, gráfica, fecha, aprobación y programación), un botón para abrir el diseño en Canva si `Dirección visual` incluye el enlace, y los botones **Aprobar** y **Pedir cambios** (con comentario obligatorio). La decisión se escribe en la grilla: `Estado` pasa a `Aprobado` o `Cambios solicitados` (los valores de la lista desplegable de la grilla) y `Observaciones` suma una línea con fecha, email y comentario. La pieza se actualiza en el planificador en el momento. Aprobar no programa ni publica: `Programar publicación` se sigue marcando en la grilla.
+
+### Ordenar la salida
+
+En el feed de Instagram, la fila de stories y la cola de LinkedIn, **Ordenar** permite arrastrar las piezas al orden en que tienen que salir (en el celular, mantener apretada la pieza antes de arrastrarla). **Guardar orden** lo escribe en la grilla:
+
+- Las fechas no se inventan: cada pieza movida toma `Día` y `Fecha/hora salida` del lugar donde se suelta, y la que estaba ahí pasa al lugar siguiente.
+- La story y la adaptación de LinkedIn de cada pieza movida (las filas cuya `Pieza relacionada` es esa pieza) se corren los mismos días y conservan su horario. Ordenar stories o LinkedIn en su propia vista no mueve otras piezas.
+- Las piezas `Programado`, `Publicado` o `Descartado`, y las que no tienen fecha, quedan fijas (🔒): el resto se ordena alrededor. Para mover una pieza ya programada, reprogramarla primero en Meta o LinkedIn y volverla a `Aprobado`.
+- Cada cambio suma una línea en `Observaciones` con la fecha anterior, la nueva y el email de quien ordenó.
+- Las filas de la grilla no se mueven (el planificador identifica cada pieza por su fila): para verlas en orden de salida, ordenar o filtrar la grilla por `Fecha/hora salida`.
+
+El feed de Instagram se muestra de la pieza más nueva a la más vieja, como en el perfil; stories y LinkedIn, en orden de salida.
 
 Si alguien inserta o mueve filas en la grilla, la acción se rechaza con el aviso “La grilla cambió desde la última sincronización”: sincronizar y volver a intentar. Así nunca se escribe sobre otra pieza.
 
