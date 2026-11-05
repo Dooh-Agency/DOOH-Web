@@ -13,6 +13,8 @@ const config: Config = {
         "dooh-dark-mid":   "#07070c",
         "dooh-lime":       "#ddf81d",
         "dooh-lime-light": "#dfff92",
+        // Lima para texto sobre fondos claros: 4,6:1 sobre dooh-white (WCAG AA).
+        "dooh-lime-ink":   "#717500",
         "dooh-white":      "#f7f7f7",
         "dooh-gray-mid":   "#c0cacb",
         "dooh-gray-light": "#d8d8d8",

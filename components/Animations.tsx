@@ -78,15 +78,11 @@ export function Animations() {
          ══════════════════════════════════════════════════════════ */
       const hero = gsap.timeline()
 
-      /* Label "DOOH Agency" + línea decorativa */
+      /* Label "DOOH Agency" (sin línea decorativa en el hero) */
       hero
-        .fromTo('#hero .section-label span:not(.section-line)',
+        .fromTo('#hero .section-label span',
           { x: -18, opacity: 0 },
           { x: 0, opacity: 1, duration: D.label, ease: E.body, stagger: 0.07 })
-        .fromTo('#hero .section-line',
-          { scaleX: 0, opacity: 0, transformOrigin: 'left center' },
-          { scaleX: 1, opacity: 1, transformOrigin: 'left center', duration: D.line, ease: E.line },
-          '-=0.25')
 
         /* Título — las dos líneas entran desde abajo con un
            leve desfase: la segunda espera 120ms a la primera */
@@ -628,7 +624,8 @@ export function Animations() {
 
       /* ══════════════════════════════════════════════════════════
          PINTURA DE TEXTO — "Resultados con intención."
-         Cada palabra pasa de blanco a lima a medida que scrolleás.
+         Cada palabra pasa a lima oscuro (dooh-lime-ink, legible
+         sobre el fondo claro) a medida que scrolleás.
          scrub: true para mapeo 1:1 con el scroll.
          stagger distribuye el inicio de cada palabra a lo largo
          del timeline: la primera pinta primero, la última al final.
@@ -640,7 +637,7 @@ export function Animations() {
           end     : 'top 28%',
           scrub   : 1.2,
         },
-        color  : '#ddf81d',
+        color  : '#717500',
         ease   : 'none',
         stagger: { amount: 0.6 },
       })
@@ -661,7 +658,7 @@ export function Animations() {
           end     : 'top 30%',
           scrub   : 1.2,
         },
-        color  : '#ddf81d',
+        color  : '#717500',
         ease   : 'none',
         stagger: { amount: 0.6 },
       })
@@ -726,10 +723,10 @@ export function Animations() {
 
         /* Fase 1 — Encendido (0% → 55% del scroll) */
         isoTl.to(g, {
-          core   : 20,
-          halo   : 52,
-          bloom  : 105,
-          opacity: 0.88,
+          core   : 30,
+          halo   : 78,
+          bloom  : 150,
+          opacity: 1,
           ease   : 'power2.in',  // neon que se calienta lentamente
           duration: 0.55,
           onUpdate: applyGlow,
@@ -746,9 +743,10 @@ export function Animations() {
           onUpdate: applyGlow,
         }, 0.55)
 
-        /* ── Parallax vertical — el iso desciende suavemente con el scroll ──
+        /* ── Parallax vertical — el iso desciende con el scroll ──
            ease: 'none' es estándar en animaciones scrub: mapeo lineal 1:1.
-           72px de desplazamiento: suficiente para percibirse sin exagerar. */
+           Arranca más arriba (top 30%) y baja 420px para que el
+           desplazamiento se note junto con el encendido. */
         gsap.to(isoEl, {
           scrollTrigger: {
             trigger : '#hero',
@@ -756,7 +754,7 @@ export function Animations() {
             end     : 'bottom top',
             scrub   : 1.6,
           },
-          y   : 72,
+          y   : 420,
           ease: 'none',
         })
       }

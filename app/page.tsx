@@ -105,7 +105,7 @@ export default function Home() {
             alt=""
             aria-hidden="true"
             className="
-              absolute top-[42%] -translate-y-1/2
+              absolute top-[30%] -translate-y-1/2
               w-[78vw] md:w-[64vw] lg:w-[58vw]
               max-w-[920px] min-w-[260px]
               right-[-4%] md:right-[-6%]
@@ -117,7 +117,6 @@ export default function Home() {
         <div className="relative z-[10] max-w-screen-xl mx-auto w-full">
           <div className="section-label flex items-center gap-3 mb-8">
             <span className="text-dooh-lime text-xs font-semibold tracking-widest uppercase" style={{ opacity: 0 }}>DOOH Agency</span>
-            <span className="section-line" style={{ opacity: 0 }} />
           </div>
 
           <h1 className="text-[clamp(2.4rem,6vw,6rem)] font-bold tracking-tightest leading-tight text-dooh-white">
@@ -187,7 +186,7 @@ export default function Home() {
         <div className="max-w-screen-xl mx-auto w-full">
 
           <div className="section-label flex items-center gap-3 mb-16">
-            <span className="text-dooh-lime text-xs font-semibold tracking-widest uppercase">02</span>
+            <span className="text-dooh-lime-ink text-xs font-semibold tracking-widest uppercase">02</span>
             <span className="text-dooh-dark/45 text-xs tracking-widest uppercase">Posicionamiento</span>
             <span className="section-line bg-dooh-dark/10" />
           </div>
@@ -307,7 +306,7 @@ export default function Home() {
         <div className="max-w-screen-xl mx-auto w-full relative z-10">
 
           <div className="section-label flex items-center gap-3 mb-6">
-            <span className="text-dooh-lime text-xs font-semibold tracking-widest uppercase">03</span>
+            <span className="text-dooh-lime-ink text-xs font-semibold tracking-widest uppercase">03</span>
             <span className="text-dooh-dark/45 text-xs tracking-widest uppercase">Servicios</span>
             <span className="section-line bg-dooh-dark/10" />
           </div>
@@ -377,7 +376,7 @@ export default function Home() {
             >
               {/* Texto: a la derecha de la navegación en escritorio. */}
               <div className="max-w-2xl md:col-start-2">
-                <p className="text-dooh-lime text-sm italic mb-4 font-light">{panel.claim}</p>
+                <p className="text-dooh-lime-ink text-sm italic mb-4 font-light">{panel.claim}</p>
                 <h3 className="text-3xl font-bold tracking-tightest text-dooh-dark mb-4 leading-tight">
                   {panel.title}
                 </h3>
@@ -444,7 +443,7 @@ export default function Home() {
       >
         <div className="max-w-screen-xl mx-auto w-full px-8 md:px-14 mb-12">
           <div className="section-label flex items-center gap-3 mb-6">
-            <span className="text-dooh-lime text-xs font-semibold tracking-widest uppercase">04</span>
+            <span className="text-dooh-lime-ink text-xs font-semibold tracking-widest uppercase">04</span>
             <span className="text-dooh-dark/45 text-xs tracking-widest uppercase">Proyectos</span>
             <span className="section-line bg-dooh-dark/10" />
           </div>
@@ -521,7 +520,7 @@ export default function Home() {
         <div className="max-w-screen-xl mx-auto w-full relative z-10">
 
           <div className="section-label flex items-center gap-3 mb-6">
-            <span className="text-dooh-lime text-xs font-semibold tracking-widest uppercase">05</span>
+            <span className="text-dooh-lime-ink text-xs font-semibold tracking-widest uppercase">05</span>
             <span className="text-dooh-dark/45 text-xs tracking-widest uppercase">Cómo trabajamos</span>
             <span className="section-line bg-dooh-dark/10" />
           </div>
@@ -582,7 +581,7 @@ export default function Home() {
         <div className="max-w-screen-xl mx-auto w-full">
 
           <div className="section-label flex items-center gap-3 mb-16">
-            <span className="text-dooh-lime text-xs font-semibold tracking-widest uppercase">06</span>
+            <span className="text-dooh-lime-ink text-xs font-semibold tracking-widest uppercase">06</span>
             <span className="text-dooh-dark/45 text-xs tracking-widest uppercase">Nosotros</span>
             <span className="section-line bg-dooh-dark/10" />
           </div>
@@ -657,7 +656,7 @@ export default function Home() {
           {/* Lado izquierdo — texto */}
           <div className="contacto-left">
             <div className="section-label flex items-center gap-3 mb-10">
-              <span className="text-dooh-lime text-xs font-semibold tracking-widest uppercase">07</span>
+              <span className="text-dooh-lime-ink text-xs font-semibold tracking-widest uppercase">07</span>
               <span className="text-dooh-dark/45 text-xs tracking-widest uppercase">Contacto</span>
               <span className="section-line bg-dooh-dark/10" />
             </div>

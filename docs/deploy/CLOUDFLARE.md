@@ -50,7 +50,7 @@ Con el deploy en `*.pages.dev`, revisar:
 - [ ] Redirecciones de Wix: `/post/riba-reimaginada-rediseñar-el-legado` → nota del blog; `/proyectos/kanso` → sección de proyectos; `/blog/categories/diseño` → `/blog`.
 - [ ] `/privacidad`, una URL inexistente (debe mostrar la página 404 de DOOH), `/robots.txt` y `/sitemap.xml`.
 - [ ] Favicon en la pestaña e imagen al compartir: pegar el link en [opengraph.xyz](https://www.opengraph.xyz) o en el [Post Inspector de LinkedIn](https://www.linkedin.com/post-inspector/).
-- [ ] `/planificador-redes`: el acceso por email funciona (agregar antes la URL del preview en Supabase, ver paso 6).
+- [ ] `/planificador-redes`: pide el código de Cloudflare Access y, al entrar, muestra las piezas.
 
 ## 5. Mover el dominio a Cloudflare
 
@@ -65,7 +65,8 @@ Con el deploy en `*.pages.dev`, revisar:
 
 ## 6. Después de publicar
 
-- Supabase → **Authentication → URL Configuration**: Site URL `https://www.dooh.com.ar` y agregar `https://www.dooh.com.ar/planificador-redes` (y la URL del preview, si se sigue usando) a Redirect URLs.
+- Zero Trust → **Access → Applications → Planificador de redes**: agregar `www.dooh.com.ar/planificador-redes` y `www.dooh.com.ar/api/planner`. Hacerlo apenas se conecte el dominio: sin eso, la página del planificador queda visible en `www`, aunque su API sigue rechazando pedidos sin sesión.
+- Cambiar en Production `NEXT_PUBLIC_SITE_URL` a `https://www.dooh.com.ar` y volver a desplegar.
 - Confirmar `ALLOWED_CONTACT_ORIGIN = https://www.dooh.com.ar` en Production y volver a enviar una consulta de prueba.
 - Métricas sin cookies: proyecto de Pages → **Metrics → Web Analytics → Enable**.
 - [Google Search Console](https://search.google.com/search-console): agregar la propiedad de dominio `dooh.com.ar` (verificación por TXT en Cloudflare) y enviar `https://www.dooh.com.ar/sitemap.xml`.
