@@ -142,7 +142,9 @@ type Placement = { item: Item; slot: Item; draggable: boolean };
 // Definido fuera del componente principal para que el arrastre no se reinicie en cada render.
 function SortableTile({ id, className = "", children }: { id: string; className?: string; children: ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
-  return <div ref={setNodeRef} style={{ transform: CSS.Translate.toString(transform), transition }} className={`${className} relative cursor-grab touch-manipulation select-none active:cursor-grabbing ${isDragging ? "z-20 opacity-80 shadow-2xl ring-4 ring-dooh-lime" : ""}`} {...attributes} {...listeners}>{children}</div>;
+  // Las imágenes y videos no reciben el puntero: si no, el navegador arranca su propio
+  // "arrastrar imagen" y la pieza no se mueve.
+  return <div ref={setNodeRef} style={{ transform: CSS.Translate.toString(transform), transition }} onDragStart={(event) => event.preventDefault()} className={`${className} relative cursor-grab touch-manipulation select-none active:cursor-grabbing [&_img]:pointer-events-none [&_video]:pointer-events-none ${isDragging ? "z-20 opacity-80 shadow-2xl ring-4 ring-dooh-lime" : ""}`} {...attributes} {...listeners}>{children}</div>;
 }
 
 export default function PlanificadorRedes() {
