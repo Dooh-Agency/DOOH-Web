@@ -100,19 +100,46 @@ export async function onRequestGet({ request, env }: PlannerContext) {
 
   const token = (await currentToken(env, store)) ?? "";
   const fields = "id,caption,media_type,media_url,thumbnail_url,permalink,timestamp";
-  const endpoint = token.startsWith("IG")
-    ? `${INSTAGRAM_GRAPH}/me/media`
-    : `${FACEBOOK_GRAPH}/${env.INSTAGRAM_ACCOUNT_ID?.trim() || DEFAULT_ACCOUNT_ID}/media`;
-  const response = await fetch(`${endpoint}?fields=${fields}&limit=${LIMIT}&access_token=${encodeURIComponent(token)}`).catch(() => null);
-  if (!response?.ok) {
-    // Si Instagram no responde, se muestra lo último guardado y se avisa, con el
-    // motivo que da Meta (no incluye el token) y el tipo de token usado.
-    const detail = await response?.json().then((body: { error?: { message?: string; code?: number; type?: string } }) => body.error).catch(() => null);
+  const query = `fields=${fields}&limit=${LIMIT}&access_token=${encodeURIComponent(token)}`;
+  const accountId = env.INSTAGRAM_ACCOUNT_ID?.trim() || DEFAULT_ACCOUNT_ID;
+
+  // Según cómo se generó, el token sirve en la API de Instagram o en la de
+  // Facebook. Se prueban los caminos posibles y se recuerda el que funcionó.
+  const routes: Record<string, () => Promise<string | null>> = {
+    instagram: async () => `${INSTAGRAM_GRAPH}/me/media?${query}`,
+    facebook: async () => `${FACEBOOK_GRAPH}/${accountId}/media?${query}`,
+    pages: async () => {
+      const pages = await fetch(`${FACEBOOK_GRAPH}/me/accounts?fields=instagram_business_account&access_token=${encodeURIComponent(token)}`).catch(() => null);
+      const body = pages?.ok ? await pages.json() as { data?: { instagram_business_account?: { id: string } }[] } : null;
+      const id = body?.data?.find((page) => page.instagram_business_account)?.instagram_business_account?.id;
+      return id ? `${FACEBOOK_GRAPH}/${id}/media?${query}` : null;
+    },
+  };
+  const remembered = await store.get<string>("instagram_route");
+  const order = [remembered, "instagram", "facebook", "pages"].filter((name, index, list): name is string => Boolean(name && routes[name]) && list.indexOf(name) === index);
+  const attempts: { route: string; status: number; message: string }[] = [];
+  let response: Response | null = null;
+  for (const name of order) {
+    const url = await routes[name]();
+    if (!url) { attempts.push({ route: name, status: 0, message: "sin cuenta de Instagram vinculada" }); continue; }
+    const candidate = await fetch(url).catch(() => null);
+    if (candidate?.ok) {
+      response = candidate;
+      if (name !== remembered) await store.set("instagram_route", name);
+      break;
+    }
+    // Motivo que da Meta (nunca incluye el token).
+    const reason = await candidate?.json().then((body: { error?: { message?: string } }) => body.error?.message ?? "").catch(() => "") ?? "";
+    attempts.push({ route: name, status: candidate?.status ?? 0, message: reason });
+  }
+  if (!response) {
+    // Si Instagram no responde, se muestra lo último guardado y se avisa.
+    const rejected = attempts.some((attempt) => attempt.status === 400 || attempt.status === 401 || attempt.status === 403);
     return json({
       connected: true,
       posts: cached?.posts ?? [],
-      detail: { status: response?.status ?? 0, api: token.startsWith("IG") ? "instagram" : "facebook", tokenPrefix: token.slice(0, 4), message: detail?.message ?? "", code: detail?.code ?? null, type: detail?.type ?? "" },
-      error: response?.status === 400 || response?.status === 401
+      attempts,
+      error: rejected
         ? "Instagram rechazó el token: hay que volver a autorizar la cuenta."
         : "Instagram no respondió; se muestran los últimos posts guardados.",
     });
