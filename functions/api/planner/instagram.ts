@@ -133,6 +133,10 @@ export async function onRequestGet({ request, env }: PlannerContext) {
     attempts.push({ route: name, status: candidate?.status ?? 0, message: reason });
   }
   if (!response) {
+    // Diagnóstico sin datos sensibles: a quién pertenece el token y qué permisos tiene.
+    const whoami = await fetch(`${FACEBOOK_GRAPH}/me?fields=id,name&access_token=${encodeURIComponent(token)}`).then((r) => r.json()).catch(() => null) as { id?: string; name?: string } | null;
+    const granted = await fetch(`${FACEBOOK_GRAPH}/me/permissions?access_token=${encodeURIComponent(token)}`).then((r) => r.json()).catch(() => null) as { data?: { permission: string; status: string }[] } | null;
+    attempts.push({ route: "diagnostico", status: 0, message: `usuario ${whoami?.name ?? "?"} (${whoami?.id ?? "?"}); permisos: ${(granted?.data ?? []).filter((item) => item.status === "granted").map((item) => item.permission).join(", ") || "ninguno"}` });
     // Si Instagram no responde, se muestra lo último guardado y se avisa.
     const rejected = attempts.some((attempt) => attempt.status === 400 || attempt.status === 401 || attempt.status === 403);
     return json({
