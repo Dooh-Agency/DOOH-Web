@@ -57,6 +57,30 @@ Se escriben con los encabezados exactos de la grilla. Las columnas que no figure
 | `Fecha/hora salida` | Sugerida, en formato `AAAA-MM-DD HH:MM` (hora de Argentina). |
 | `Programar publicación` | Siempre `No`. |
 
+## Links con etiqueta (UTM)
+
+Todo link al sitio que se use en redes lleva etiquetas `utm_*`. Así la pestaña **Consultas** del planificador sabe qué canal y qué pieza trajo cada consulta. Sin etiqueta, las visitas desde la app de Instagram suelen figurar como “Directo”.
+
+Formato: `https://www.dooh.com.ar/<página>?utm_source=<red>&utm_medium=<ubicación>&utm_campaign=<pieza>`
+
+| Dónde va el link | `utm_source` | `utm_medium` | `utm_campaign` |
+| --- | --- | --- | --- |
+| Bio de Instagram | `instagram` | `bio` | `bio` (o el tema del mes si la bio apunta a una nota) |
+| Sticker de enlace en story | `instagram` | `story` | código de la pieza en minúsculas, por ejemplo `03s` |
+| Post o artículo de LinkedIn | `linkedin` | `post` | código de la pieza, por ejemplo `03` |
+| Newsletter o mail | `email` | `newsletter` | mes, por ejemplo `2026-11` |
+| WhatsApp (link enviado a mano) | `whatsapp` | `mensaje` | tema |
+
+Reglas:
+
+- Solo letras minúsculas, números y guiones; sin espacios ni tildes.
+- En `utm_campaign` usar el código de `Pieza` de la grilla, así la consulta se puede cruzar con la publicación.
+- En Instagram los links del caption no se pueden tocar: el link etiquetado va en la bio o en el sticker de la story, y el caption dice “link en la bio”.
+- Al armar una tanda, cada pieza que lleve al sitio incluye su link etiquetado en `Dirección visual` (stories: en “link al post”/sticker) y, en LinkedIn, dentro del `Copy ES`.
+
+Ejemplo, nota del blog en LinkedIn (pieza `03`):
+`https://www.dooh.com.ar/blog/ai-in-design-report-2026-el-stack-de-ia-se-duplico?utm_source=linkedin&utm_medium=post&utm_campaign=03`
+
 ## Reglas
 
 - No inventar clientes, métricas, resultados ni citas. Si falta información, escribir `[REVISAR]` al comienzo del copy y explicar qué falta en `Dirección visual`.

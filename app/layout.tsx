@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { Animations }   from "@/components/Animations";
+import { LeadTracker } from "@/components/LeadSource";
 import { siteUrl } from "@/lib/site";
 import "./globals.css";
 
@@ -36,6 +37,7 @@ export default function RootLayout({
       <body>
         <SmoothScroll />
         <Animations />
+        <LeadTracker />
         {children}
       </body>
     </html>

@@ -1,4 +1,8 @@
+import type { D1Database } from "../_shared/planner";
+import { describeOrigin, readOrigin, recordLead } from "../_shared/leads";
+
 interface Env {
+  PLANNER_DB?: D1Database;
   ALLOWED_CONTACT_ORIGIN?: string;
   CONTACT_RECIPIENT?: string;
   RESEND_API_KEY?: string;
@@ -72,6 +76,10 @@ export async function onRequestPost(context: { request: Request; env: Env }) {
     return redirect(request, "/contacto-error");
   }
 
+  // Canal por el que llegó la persona (sin datos personales), ver functions/_shared/leads.ts.
+  const leadOrigin = readOrigin((name) => formData.get(name));
+  const originText = describeOrigin(leadOrigin);
+
   const safeName = fields.nombre.replace(/[\r\n]/g, " ");
   // Tolera espacios o saltos de línea pegados junto con la clave en Cloudflare.
   const apiKey = env.RESEND_API_KEY.trim();
@@ -93,13 +101,16 @@ export async function onRequestPost(context: { request: Request; env: Env }) {
         "",
         "Mensaje:",
         fields.mensaje,
+        "",
+        `Origen: ${originText}`,
       ].join("\n"),
       html: `<h1>Nueva consulta web</h1>
 <p><strong>Nombre:</strong> ${escapeHtml(fields.nombre)}</p>
 <p><strong>Email:</strong> ${escapeHtml(fields.email)}</p>
 <p><strong>WhatsApp:</strong> ${escapeHtml(fields.whatsapp || "No informado")}</p>
 <p><strong>Mensaje:</strong></p>
-<p>${escapeHtml(fields.mensaje).replace(/\n/g, "<br>")}</p>`,
+<p>${escapeHtml(fields.mensaje).replace(/\n/g, "<br>")}</p>
+<p style="color:#666;font-size:12px"><strong>Origen:</strong> ${escapeHtml(originText)}</p>`,
     }),
   });
 
@@ -113,6 +124,13 @@ export async function onRequestPost(context: { request: Request; env: Env }) {
         ` · clave: ${apiKey.length} caracteres, empieza con "re_": ${apiKey.startsWith("re_")}`,
     );
     return redirect(request, "/contacto-error");
+  }
+
+  // El registro del origen nunca debe impedir que la consulta llegue.
+  try {
+    await recordLead(env.PLANNER_DB, "form", leadOrigin);
+  } catch (error) {
+    console.error(`No se pudo registrar el origen de la consulta: ${String(error).slice(0, 200)}`);
   }
 
   return redirect(request, "/gracias");

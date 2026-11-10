@@ -1,6 +1,7 @@
 import { Logo } from "@/components/Logo";
 import { ClientLogoCarousel } from "@/components/ClientLogoCarousel";
 import { ProjectGallery } from "@/components/ProjectGallery";
+import { LeadSourceFields } from "@/components/LeadSource";
 
 /* ================================================================
    DOOH Agency — page.tsx  v2
@@ -695,6 +696,7 @@ export default function Home() {
             className="form-fields flex flex-col gap-4"
           >
             <input type="hidden" name="form-name" value="contacto-dooh" />
+            <LeadSourceFields />
             <p className="hidden" aria-hidden="true">
               <label>
                 No completar este campo si sos una persona

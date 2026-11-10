@@ -70,6 +70,13 @@ export default function PrivacidadPage() {
               para mantener el sitio disponible y protegerlo de ataques. No usamos esos datos para identificarte ni para
               crear perfiles.
             </p>
+            <p>
+              Para saber qué canales nos traen consultas, cuando nos escribís por el formulario o tocás el botón de WhatsApp
+              registramos de forma anónima por dónde llegaste al sitio: el canal (por ejemplo, Instagram o Google), la campaña
+              si el enlace la indicaba y las páginas de entrada y de contacto. Ese dato se guarda en tu navegador solo mientras
+              la pestaña está abierta, sin cookies, y no se asocia a tu nombre ni a tu correo. También medimos las visitas con
+              Cloudflare Web Analytics, que no usa cookies ni identifica a las personas.
+            </p>
           </Section>
 
           <Section title="3. Para qué los usamos y con qué base legal">

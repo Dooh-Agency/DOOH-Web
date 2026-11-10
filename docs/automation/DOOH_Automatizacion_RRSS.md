@@ -90,6 +90,10 @@ No inventar proyectos, métricas, clientes, integrantes, lanzamientos ni resulta
 
 Se puede desplazar la secuencia por fechas u oportunidades puntuales, pero se conserva la relación: **una story, un día después, por cada tema principal**.
 
+### Links al sitio
+
+Todo link a dooh.com.ar que se publique en redes (bio, sticker de story, post de LinkedIn, newsletter) lleva etiquetas `utm_source`, `utm_medium` y `utm_campaign` con el código de la pieza. La convención está en [`automation/grid/TANDA_SEMANAL.md`](../../automation/grid/TANDA_SEMANAL.md#links-con-etiqueta-utm) y el resultado se ve en la pestaña **Consultas** del planificador.
+
 ### Criterio de distribución por canal
 
 La misma idea no se replica de manera idéntica en ambas redes. Se define para qué público y formato aplica cada pieza:
