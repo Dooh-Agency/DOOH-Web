@@ -40,9 +40,18 @@ jobs:
         env:
           DEPLOY_HOOK: ${{ secrets.CLOUDFLARE_DEPLOY_HOOK }}
         run: |
-          if [ -z "$DEPLOY_HOOK" ]; then
+          # Al pegar la URL en GitHub pueden quedar espacios o saltos de línea.
+          hook=$(printf '%s' "$DEPLOY_HOOK" | tr -d '[:space:]')
+          if [ -z "$hook" ]; then
             echo "::error::Falta el secreto CLOUDFLARE_DEPLOY_HOOK en GitHub (ver docs/deploy/CLOUDFLARE.md)."
             exit 1
           fi
-          curl --fail --silent --show-error -X POST "$DEPLOY_HOOK" > /dev/null
+          case "$hook" in
+            https://api.cloudflare.com/*) ;;
+            *)
+              echo "::error::CLOUDFLARE_DEPLOY_HOOK no es la URL del deploy hook (debe empezar con https://api.cloudflare.com/). Volvé a copiarla desde Cloudflare."
+              exit 1
+              ;;
+          esac
+          curl --fail --silent --show-error -X POST "$hook" > /dev/null
           echo "Deploy pedido a Cloudflare Pages."
