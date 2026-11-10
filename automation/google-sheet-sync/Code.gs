@@ -7,7 +7,7 @@
  */
 
 // Versión actual: sincroniza con Cloudflare en lugar de Supabase.
-const PLANNER_SYNC_VERSION = '2026.11.05.1';
+const PLANNER_SYNC_VERSION = '2026.11.10.1';
 
 const PLANNER_CONFIG = {
   sheetName: 'Grilla semanal',
@@ -55,7 +55,7 @@ function syncPlanner() {
   });
 
   const folders = ensureAssetFolders_(sheet, headerIndex, rawRows);
-  const report = { createdOrUpdated: 0, assets: 0, uploads: 0, skipped: 0, removed: 0, errors: folders.errors.slice() };
+  const report = { createdOrUpdated: 0, assets: 0, uploads: 0, skipped: 0, removed: 0, links: 0, errors: folders.errors.slice() };
   const sourceKeys = [];
 
   rawRows.forEach((row, offset) => {
@@ -76,6 +76,13 @@ function syncPlanner() {
     }
   });
 
+  // Carga en “URL publicada” el link de los posts que ya salieron en Instagram.
+  try {
+    report.links = writePublishedLinks_(api, spreadsheet, sheet, headerIndex);
+  } catch (error) {
+    report.errors.push(`Links de Instagram: ${error.message}`);
+  }
+
   // Quita del planificador las filas que ya no existen en la grilla.
   if (sourceKeys.length) {
     try {
@@ -89,6 +96,7 @@ function syncPlanner() {
     `Piezas sincronizadas: ${report.createdOrUpdated}`,
     `Carpetas nuevas: ${folders.created}`,
     `Assets encontrados: ${report.assets} (subidos ahora: ${report.uploads})`,
+    `Links de Instagram cargados: ${report.links}`,
     `Piezas quitadas del planificador: ${report.removed}`,
     `Filas sin pieza o tema: ${report.skipped}`,
   ];
@@ -96,6 +104,32 @@ function syncPlanner() {
     message.push('', `Errores (${report.errors.length}):`, report.errors.slice(0, 8).join('\n'));
   }
   notify_(message.join('\n'));
+}
+
+/**
+ * Pide al planificador los posts de Instagram ya publicados que coinciden con
+ * piezas sin link (por el copy o por el día de salida) y escribe el link en
+ * “URL publicada” y “Publicado” en “Estado publicación”. Nunca pisa un link
+ * que ya esté cargado.
+ */
+function writePublishedLinks_(api, spreadsheet, sheet, headerIndex) {
+  const urlColumn = headerIndex['URL publicada'];
+  if (urlColumn === undefined) return 0;
+  const result = apiRequest_(api, { op: 'instagram_links' });
+  const prefix = `${spreadsheet.getId()}:${sheet.getSheetId()}:`;
+  let written = 0;
+  (result.links || []).forEach((link) => {
+    if (link.source_key.indexOf(prefix) !== 0) return;
+    const rowNumber = Number(link.source_key.slice(prefix.length));
+    if (!rowNumber) return;
+    const urlCell = sheet.getRange(rowNumber, urlColumn + 1);
+    if (String(urlCell.getValue()).trim()) return;
+    urlCell.setValue(link.permalink);
+    const statusColumn = headerIndex['Estado publicación'];
+    if (statusColumn !== undefined) sheet.getRange(rowNumber, statusColumn + 1).setValue('Publicado');
+    written += 1;
+  });
+  return written;
 }
 
 // Envía una fila al planificador y sube solo los archivos de Drive nuevos o modificados.

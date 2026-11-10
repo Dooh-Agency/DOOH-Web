@@ -68,6 +68,8 @@ Para generar o reemplazar el token:
 
 La función `/api/planner/instagram` (protegida por Access) guarda la respuesta 3 horas en D1 (tabla `planner_settings`, que crea sola). También acepta un token de usuario de Instagram (empieza con `IG`, vence a los 60 días): en ese caso lo renueva cada 7 días. Si Instagram rechaza el token (por ejemplo, tras cambiar la contraseña), el planificador lo avisa debajo del feed: generar uno nuevo y reemplazar el secreto; el nuevo pisa al guardado. Los posts que ya figuran en la grilla con su `URL publicada` no se repiten.
 
+**Links automáticos.** En cada sincronización (manual o cada hora), el planificador lee los últimos posts de Instagram (como mucho, de hace 10 minutos) y los empareja con las piezas de feed que todavía no tienen `URL publicada`: primero por el comienzo del copy ES (sin marcas como `[ES]` o `[REVISAR]`) dentro de las dos semanas de la fecha de salida y, si no coincide, por el día de salida cuando ese día hay una sola pieza posible. Escribe el link en `URL publicada` y `Publicado` en `Estado publicación`, y nunca pisa un link cargado. Si hay dos piezas posibles, no escribe nada: el link se carga a mano. Las stories y LinkedIn no se emparejan (la API no las lista). Toda pieza con `URL publicada` figura como publicada en el planificador.
+
 ### En Apps Script
 
 1. En la grilla, abrir **Extensiones → Apps Script**.

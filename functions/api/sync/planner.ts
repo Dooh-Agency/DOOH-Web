@@ -1,4 +1,6 @@
 import { error, json, sameSecret, type PlannerContext, type PlannerEnv } from "../../_shared/planner";
+import { loadInstagramPosts } from "../../_shared/instagram";
+import { matchPublishedPosts, type LinkCandidate } from "../../_shared/published-links";
 
 // Sincronización desde Apps Script. Fuera de Cloudflare Access: se autentica
 // con la clave compartida PLANNER_SYNC_SECRET en el encabezado X-Planner-Secret.
@@ -47,6 +49,10 @@ async function upsertItem(env: PlannerEnv, item: ItemInput) {
   if (!statuses.has(item.status)) throw new Error(`Estado inválido: ${item.status}`);
   if (!channels.has(item.channel)) throw new Error(`Canal inválido: ${item.channel}`);
 
+  // En la grilla, “Estado” solo admite estados de revisión: lo que marca que una pieza
+  // salió es su “URL publicada”. Con URL, la pieza cuenta como publicada.
+  const status = item.published_url?.trim() && item.status !== "rejected" ? "published" : item.status;
+
   const existing = await env.PLANNER_DB.prepare("SELECT id FROM content_items WHERE source_key = ?").bind(item.source_key).first<{ id: string }>();
   const id = existing?.id ?? crypto.randomUUID();
   await env.PLANNER_DB.prepare(`
@@ -65,7 +71,7 @@ async function upsertItem(env: PlannerEnv, item: ItemInput) {
   `).bind(
     id, item.source_key, item.piece ?? "", item.project, item.title, item.channel, item.format ?? "", item.objective ?? "",
     item.caption_es ?? "", item.caption_en ?? "", item.call_to_action ?? "", item.creative_direction ?? "",
-    item.canva_url ?? null, item.asset_url ?? null, item.scheduled_at ?? null, item.status,
+    item.canva_url ?? null, item.asset_url ?? null, item.scheduled_at ?? null, status,
     item.publish_requested ? 1 : 0, item.published_url ?? null, item.review_notes ?? "", item.sort_order ?? 0,
   ).run();
 
@@ -108,6 +114,26 @@ async function prune(env: PlannerEnv, sourceKeys: string[]) {
   return removed.length;
 }
 
+// Busca en Instagram los posts ya publicados que todavía no tienen su link en
+// la grilla, los marca como publicados y devuelve los links para que Apps
+// Script los escriba en “URL publicada”.
+const LINKS_MAX_AGE_MS = 10 * 60 * 1000;
+
+async function instagramLinks(env: PlannerEnv) {
+  const feed = await loadInstagramPosts(env, LINKS_MAX_AGE_MS);
+  if (!feed.connected || !feed.posts.length) return { links: [], error: feed.error ?? "" };
+  const rows = await env.PLANNER_DB.prepare(
+    "SELECT source_key, channel, format, status, scheduled_at, caption_es, published_url FROM content_items",
+  ).all<LinkCandidate>();
+  const links = matchPublishedPosts(feed.posts, rows.results);
+  if (links.length) {
+    await env.PLANNER_DB.batch(links.map((link) => env.PLANNER_DB
+      .prepare("UPDATE content_items SET published_url = ?, status = 'published', updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE source_key = ?")
+      .bind(link.permalink, link.source_key)));
+  }
+  return { links, error: feed.error ?? "" };
+}
+
 export async function onRequestPost({ request, env }: PlannerContext) {
   if (!sameSecret(request.headers.get("X-Planner-Secret"), env.PLANNER_SYNC_SECRET)) return error("Clave de sincronización inválida.", 401);
 
@@ -128,6 +154,7 @@ export async function onRequestPost({ request, env }: PlannerContext) {
       if (!Array.isArray(body.source_keys) || !body.source_keys.length) throw new Error("Falta la lista de filas de la grilla.");
       return json({ ok: true, removed: await prune(env, body.source_keys) });
     }
+    if (body.op === "instagram_links") return json({ ok: true, ...(await instagramLinks(env)) });
     return error("Operación desconocida.", 400);
   } catch (caught) {
     return error(caught instanceof Error ? caught.message : "Error de sincronización.", 400);
