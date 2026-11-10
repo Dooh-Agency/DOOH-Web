@@ -1,0 +1,48 @@
+# Publica las notas del blog programadas para hoy.
+#
+# Las notas con `publishedAt` futuro quedan ocultas hasta ese día (lib/blog-posts.ts),
+# pero el sitio es estático: hay que volver a armarlo para que aparezcan. Esta tarea
+# corre todos los días a las 06:05 (hora de Argentina) y, solo si hay una nota con la
+# fecha de hoy, pide un deploy nuevo a Cloudflare Pages con su deploy hook.
+# Configuración: docs/deploy/CLOUDFLARE.md, sección “Notas programadas del blog”.
+
+name: Blog programado
+
+on:
+  schedule:
+    - cron: "5 9 * * *" # 09:05 UTC = 06:05 en Argentina
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Publicar aunque hoy no haya notas programadas"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Buscar notas con fecha de hoy
+        id: check
+        run: |
+          today=$(TZ=America/Argentina/Buenos_Aires date +%F)
+          count=$(grep -c "\"publishedAt\": \"$today\"" lib/blog-posts.ts || true)
+          echo "Hoy es $today en Argentina. Notas con esa fecha: $count"
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+
+      - name: Pedir deploy a Cloudflare Pages
+        if: steps.check.outputs.count != '0' || inputs.force
+        env:
+          DEPLOY_HOOK: ${{ secrets.CLOUDFLARE_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$DEPLOY_HOOK" ]; then
+            echo "::error::Falta el secreto CLOUDFLARE_DEPLOY_HOOK en GitHub (ver docs/deploy/CLOUDFLARE.md)."
+            exit 1
+          fi
+          curl --fail --silent --show-error -X POST "$DEPLOY_HOOK" > /dev/null
+          echo "Deploy pedido a Cloudflare Pages."

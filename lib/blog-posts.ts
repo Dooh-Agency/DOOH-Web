@@ -13,7 +13,8 @@ export type BlogPost = {
   blocks: BlogBlock[];
 };
 
-export const blogPosts: BlogPost[] = [
+// Todas las notas, incluidas las programadas. Para el sitio usar `blogPosts`.
+export const allBlogPosts: BlogPost[] = [
   {
     "title": "Tendencias de content marketing impulsadas por inteligencia artificial",
     "category": "Pensamiento",
@@ -1015,6 +1016,15 @@ export const blogPosts: BlogPost[] = [
     "publishedAt": "2025-10-03"
   }
 ] as BlogPost[];
+
+// Fecha de hoy en Argentina (AAAA-MM-DD), que es la que se usa en `publishedAt`.
+export const todayInArgentina = (now = new Date()) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }).format(now);
+
+// Notas programadas: una nota con `publishedAt` futuro no aparece en el blog,
+// en el sitemap ni en su URL hasta ese día. El sitio es estático, así que se
+// vuelve a publicar el día de la nota (ver .github/workflows/blog-programado.yml).
+export const blogPosts: BlogPost[] = allBlogPosts.filter((post) => post.publishedAt <= todayInArgentina());
 
 export const getBlogPost = (slug: string) =>
   blogPosts.find((post) => post.slug === decodeURIComponent(slug));

@@ -71,3 +71,19 @@ Con el deploy en `*.pages.dev`, revisar:
 - Métricas sin cookies: proyecto de Pages → **Metrics → Web Analytics → Enable**.
 - [Google Search Console](https://search.google.com/search-console): agregar la propiedad de dominio `dooh.com.ar` (verificación por TXT en Cloudflare) y enviar `https://www.dooh.com.ar/sitemap.xml`.
 - Dar de baja el plan de Wix solo después de comprobar que el sitio, el correo y el formulario funcionan. Si el dominio se hubiera comprado a través de Wix, transferirlo antes de cancelar.
+
+## 7. Notas programadas del blog
+
+Una nota del blog puede subirse aprobada antes de su fecha y salir sola ese día.
+
+- En `lib/blog-posts.ts`, la nota lleva su fecha de salida en `publishedAt` (`AAAA-MM-DD`, hora de Argentina). Mientras esa fecha sea futura, la nota no aparece en `/blog`, en el sitemap ni en su URL.
+- El sitio es estático, así que hay que volver a armarlo ese día. La tarea [`.github/workflows/blog-programado.yml`](../../.github/workflows/blog-programado.yml) corre todos los días a las 06:05 (hora de Argentina) y, **solo si hay una nota con la fecha de hoy**, pide un deploy nuevo a Cloudflare Pages. Una nota por mes son unos 12 builds por año; el plan gratis de Pages permite 500 por mes.
+- Aprobación: la nota se sube al repositorio recién cuando el equipo la aprobó. Programarla no reemplaza esa revisión.
+
+Configuración (una sola vez):
+
+1. Cloudflare → **Workers & Pages → dooh-web → Settings → Builds → Deploy hooks → Add deploy hook**: nombre `Blog programado`, rama `main`. Copiar la URL que genera: es una clave, no se pega en el repositorio ni en el chat.
+2. GitHub → repositorio `Dooh-Agency/DOOH-Web` → **Settings → Secrets and variables → Actions → New repository secret**: nombre `CLOUDFLARE_DEPLOY_HOOK`, valor la URL del paso anterior.
+3. Probar: GitHub → **Actions → Blog programado → Run workflow**, marcando “Publicar aunque hoy no haya notas programadas”. Debe terminar en verde y aparecer un deploy nuevo en Cloudflare.
+
+GitHub pausa las tareas programadas de un repositorio sin actividad durante 60 días; si pasa, se reactivan desde la pestaña **Actions**.
