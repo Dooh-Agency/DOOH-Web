@@ -16,6 +16,84 @@ export type BlogPost = {
 // Todas las notas, incluidas las programadas. Para el sitio usar `blogPosts`.
 export const allBlogPosts: BlogPost[] = [
   {
+    "title": "El stack de IA del diseño se duplicó. El criterio tiene que acompañar",
+    "category": "Pensamiento",
+    "image": "/blog/nota-11.png",
+    "blocks": [
+      {
+        "tag": "blockquote",
+        "text": "Qué muestra el AI in Design Report 2026 sobre cómo trabajan hoy los equipos de diseño, y por qué el desafío ya no es sumar herramientas sino ordenarlas."
+      },
+      {
+        "tag": "p",
+        "text": "Cada año, Designer Fund y Foundation Capital encuestan a diseñadores de empresas de tecnología para entender cómo cambia su trabajo con la inteligencia artificial. La edición 2026 del AI in Design Report, con datos relevados en el primer trimestre del año, deja una conclusión clara: la IA dejó de ser una prueba al costado del proceso y pasó a ser parte del día a día."
+      },
+      {
+        "tag": "h3",
+        "text": "De probar a usar todos los días"
+      },
+      {
+        "tag": "p",
+        "text": "El 91 % de las personas encuestadas usa IA en su trabajo de diseño al menos una vez por semana. Un año atrás, ese número era 54 %. Y el 75 % ya la usa todos los días."
+      },
+      {
+        "tag": "p",
+        "text": "También cambió dónde se usa. En 2025 aparecía sobre todo en la exploración y la ideación; en 2026 está presente en todo el proceso, de la primera idea a la entrega. Los saltos más grandes se dieron en generación de código (+31 puntos), wireframes (+27) y sistemas de diseño (+24), y la mitad de quienes respondieron dice que ya subió código a producción."
+      },
+      {
+        "tag": "h3",
+        "text": "El stack pasó de 3 a 7 herramientas"
+      },
+      {
+        "tag": "p",
+        "text": "El dato que más nos interesa es otro: el diseñador promedio usa hoy 7 herramientas de IA, frente a 3 el año pasado. Y la lista sigue en movimiento. Casi la mitad dice que todavía está buscando sus herramientas de cabecera, y solo el 37 % siente que ya tiene un set definido para la mayoría de sus tareas."
+      },
+      {
+        "tag": "p",
+        "text": "Más herramientas no significan mejores resultados. El 80 % dice que una herramienta se queda en su flujo cuando entrega resultados confiables y de calidad, y al mismo tiempo el 62 % señala la calidad irregular como su principal problema. La IA amplía lo que se puede hacer, pero también la cantidad de cosas que hay que evaluar, probar y decidir."
+      },
+      {
+        "tag": "blockquote",
+        "text": "El desafío no es sumar herramientas: es diseñar sistemas de trabajo que las vuelvan útiles."
+      },
+      {
+        "tag": "h3",
+        "text": "Diseñadores que fabrican sus propias herramientas"
+      },
+      {
+        "tag": "p",
+        "text": "Otra tendencia que marca el informe es que cada vez más diseñadores construyen sus propias herramientas: pequeñas aplicaciones para automatizar un paso repetitivo, plugins a medida o sistemas internos que llevan el criterio y la identidad de un equipo a cada pieza. En empresas de más de 2.000 personas, el 74 % ya usa herramientas desarrolladas internamente; en equipos de hasta 50 personas, el 26 %."
+      },
+      {
+        "tag": "p",
+        "text": "Lo vivimos de cerca. En DOOH armamos nuestro propio planificador de redes, un espacio donde el equipo revisa, ordena y aprueba cada pieza antes de publicarla. No reemplaza el criterio: lo ordena y lo hace visible."
+      },
+      {
+        "tag": "h3",
+        "text": "Qué significa para una marca"
+      },
+      {
+        "tag": "p",
+        "text": "La velocidad que trae la IA es real, pero suma solo cuando hay un sistema detrás: una identidad clara, un flujo de revisión y personas que deciden qué sale y qué no. Sin eso, más herramientas generan más ruido, no más calidad."
+      },
+      {
+        "tag": "p",
+        "text": "Por eso, antes de sumar una herramienta nueva, conviene responder tres preguntas: qué paso del proceso resuelve, cómo se integra con lo que el equipo ya usa y quién controla la calidad de lo que produce."
+      },
+      {
+        "tag": "p",
+        "text": "La conversación ya no es si usar IA en diseño, sino cómo construir un flujo de trabajo con criterio. Ahí es donde el diseño vuelve a ser lo que siempre fue: una decisión."
+      },
+      {
+        "tag": "p",
+        "text": "Fuente: AI in Design Report 2026, Designer Fund y Foundation Capital, capítulo “Tools”. https://stateofaidesign.com/chapters/tools"
+      }
+    ],
+    "slug": "ai-in-design-report-2026-el-stack-de-ia-se-duplico",
+    "legacyPath": "",
+    "publishedAt": "2026-11-14"
+  },
+  {
     "title": "Tendencias de content marketing impulsadas por inteligencia artificial",
     "category": "Pensamiento",
     "image": "/blog/nota-01.png",
@@ -1024,7 +1102,10 @@ export const todayInArgentina = (now = new Date()) =>
 // Notas programadas: una nota con `publishedAt` futuro no aparece en el blog,
 // en el sitemap ni en su URL hasta ese día. El sitio es estático, así que se
 // vuelve a publicar el día de la nota (ver .github/workflows/blog-programado.yml).
-export const blogPosts: BlogPost[] = allBlogPosts.filter((post) => post.publishedAt <= todayInArgentina());
+// Con `npm run dev` se ven todas, para revisar las programadas antes de su fecha.
+export const blogPosts: BlogPost[] = process.env.NODE_ENV === "production"
+  ? allBlogPosts.filter((post) => post.publishedAt <= todayInArgentina())
+  : allBlogPosts;
 
 export const getBlogPost = (slug: string) =>
   blogPosts.find((post) => post.slug === decodeURIComponent(slug));
