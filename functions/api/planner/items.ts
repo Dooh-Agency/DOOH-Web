@@ -47,6 +47,8 @@ export async function onRequestGet({ request, env }: PlannerContext) {
     viewer: email,
     items: items.results.map(({ preview_key, publish_requested, ...item }) => ({
       ...item,
+      // Cargada en la red con fecha ya pasada: ya salió.
+      status: item.status === "scheduled" && item.scheduled_at && Date.parse(item.scheduled_at) <= Date.now() ? "published" : item.status,
       publish_requested: Boolean(publish_requested),
       previewUrl: preview_key ? assetUrl(preview_key) : "",
       assets: (byItem.get(item.id) ?? []).map((asset) => ({

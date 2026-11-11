@@ -26,6 +26,7 @@ type ItemInput = {
   status: string;
   publish_requested?: boolean;
   published_url?: string | null;
+  publication_state?: string;
   review_notes?: string;
   sort_order?: number;
 };
@@ -42,6 +43,19 @@ async function storedKeys(env: PlannerEnv, itemIds: string[]) {
   return assets.results.map((row) => row.r2_key).concat(previews.results.map((row) => row.preview_key));
 }
 
+// En la grilla, “Estado” solo admite estados de revisión. Que la pieza ya está en
+// la red lo indican “URL publicada” (publicada) o “Estado publicación” = Publicado
+// (cargada en Meta o LinkedIn: programada hasta su fecha, publicada después).
+function effectiveStatus(item: ItemInput, now = Date.now()) {
+  if (item.status === "rejected") return item.status;
+  if (item.published_url?.trim()) return "published";
+  if (item.publication_state?.trim().toLowerCase() === "publicado") {
+    const when = item.scheduled_at ? Date.parse(item.scheduled_at) : NaN;
+    return !Number.isNaN(when) && when > now ? "scheduled" : "published";
+  }
+  return item.status;
+}
+
 // Crea o actualiza una pieza por su fila de la grilla. Devuelve los archivos ya
 // guardados para que Apps Script suba solo lo nuevo.
 async function upsertItem(env: PlannerEnv, item: ItemInput) {
@@ -49,9 +63,7 @@ async function upsertItem(env: PlannerEnv, item: ItemInput) {
   if (!statuses.has(item.status)) throw new Error(`Estado inválido: ${item.status}`);
   if (!channels.has(item.channel)) throw new Error(`Canal inválido: ${item.channel}`);
 
-  // En la grilla, “Estado” solo admite estados de revisión: lo que marca que una pieza
-  // salió es su “URL publicada”. Con URL, la pieza cuenta como publicada.
-  const status = item.published_url?.trim() && item.status !== "rejected" ? "published" : item.status;
+  const status = effectiveStatus(item);
 
   const existing = await env.PLANNER_DB.prepare("SELECT id FROM content_items WHERE source_key = ?").bind(item.source_key).first<{ id: string }>();
   const id = existing?.id ?? crypto.randomUUID();

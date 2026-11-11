@@ -72,13 +72,15 @@ export function LeadTracker() {
   return null;
 }
 
-/** Va dentro del formulario de contacto: envía el origen como campos ocultos. */
+/** Va dentro del formulario de contacto: envía el origen y la hora de apertura como campos ocultos. */
 export function LeadSourceFields() {
   const [origin, setOrigin] = useState<Origin | null>(null);
   const [page, setPage] = useState("");
+  const [startedAt, setStartedAt] = useState("");
   useEffect(() => {
     setOrigin(captureOrigin());
     setPage(window.location.pathname);
+    setStartedAt(String(Date.now()));
   }, []);
   return (
     <>
@@ -88,6 +90,8 @@ export function LeadSourceFields() {
       <input type="hidden" name="origen_referrer" value={origin?.referrer ?? ""} />
       <input type="hidden" name="origen_landing" value={origin?.landing ?? ""} />
       <input type="hidden" name="origen_page" value={page} />
+      {/* Hora en que se abrió el formulario: el servidor descarta los envíos sin ella (bots). */}
+      <input type="hidden" name="form-start" value={startedAt} />
     </>
   );
 }

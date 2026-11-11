@@ -65,6 +65,17 @@ export async function onRequestPost(context: { request: Request; env: Env }) {
     return redirect(request, "/gracias");
   }
 
+  // Los envíos reales pasan por la página: el navegador completa “form-start”
+  // con la hora en que se abrió el formulario y la página de contacto. Los bots
+  // que mandan el POST directo llegan sin eso (o en menos de 3 segundos) y se
+  // descartan en silencio, sin mail ni registro.
+  const startedAt = Number(formData.get("form-start"));
+  const elapsed = Date.now() - startedAt;
+  if (!startedAt || !String(formData.get("origen_page") ?? "").trim() || elapsed < 3000 || elapsed > 2 * 24 * 60 * 60 * 1000) {
+    console.warn(`Formulario descartado como automático (form-start: ${startedAt ? `${Math.round(elapsed / 1000)} s` : "sin dato"}).`);
+    return redirect(request, "/gracias");
+  }
+
   const fields: ContactFields = {
     nombre: value(formData, "nombre"),
     email: value(formData, "email"),

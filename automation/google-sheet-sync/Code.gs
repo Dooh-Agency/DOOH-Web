@@ -7,7 +7,7 @@
  */
 
 // Versión actual: sincroniza con Cloudflare en lugar de Supabase.
-const PLANNER_SYNC_VERSION = '2026.11.10.1';
+const PLANNER_SYNC_VERSION = '2026.11.11.1';
 
 const PLANNER_CONFIG = {
   sheetName: 'Grilla semanal',
@@ -596,6 +596,9 @@ function itemPayload_(sourceKey, row, headerIndex, rowNumber) {
     scheduled_at: dateValue_(row, headerIndex, 'Fecha/hora salida'),
     status: normalizeStatus_(value_(row, headerIndex, 'Estado')),
     publish_requested: yes_(value_(row, headerIndex, 'Programar publicación')),
+    // “Publicado” en esta columna: la pieza ya está cargada en la red. El
+    // planificador la muestra como programada hasta su fecha y publicada después.
+    publication_state: String(value_(row, headerIndex, 'Estado publicación')),
     published_url: value_(row, headerIndex, 'URL publicada') || null,
     review_notes: value_(row, headerIndex, 'Observaciones'),
     sort_order: 100000 - rowNumber,
