@@ -99,6 +99,7 @@ function readiness(item: Item) {
 }
 function readinessSummary(item: Item) {
   if (item.status === "published") return "Publicada";
+  if (item.status === "scheduled") return "Programada";
   if (item.status === "rejected") return "Rechazada";
   const missing = readiness(item).filter((check) => !check.done).map((check) => check.label.toLowerCase());
   return missing.length ? `Falta: ${missing.join(", ")}` : "Lista para salir";
