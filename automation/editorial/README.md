@@ -12,6 +12,8 @@ Crear una carpeta por nota con el formato `YYYY-MM-slug/`. Ejemplo:
   adaptaciones-redes.md
 ```
 
+Cada nota se registra además en la pestaña **Blog** de la [grilla de redes](https://docs.google.com/spreadsheets/d/1n_dtGSjoxJd_SIHwU_0YvfHAj1tDR7CPRDWH-frfL_c/edit), desde que es una idea hasta que se carga en el sitio. El planificador la muestra en su pestaña **Blog** junto con las notas programadas y publicadas del sitio (ver [Notas del blog](../google-sheet-sync/SETUP.md#notas-del-blog)).
+
 ## Brief mínimo
 
 - título de trabajo y posible slug;

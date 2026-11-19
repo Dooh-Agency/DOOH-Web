@@ -6,12 +6,14 @@
  * Las claves quedan sólo en Script Properties de Google Apps Script.
  */
 
-// Versión actual: sincroniza con Cloudflare en lugar de Supabase.
-const PLANNER_SYNC_VERSION = '2026.11.11.1';
+// Versión actual: suma la pestaña “Blog” (notas en preparación) al planificador.
+const PLANNER_SYNC_VERSION = '2026.11.19.1';
 
 const PLANNER_CONFIG = {
   sheetName: 'Grilla semanal',
   headerRow: 4,
+  // Pestaña de notas del blog en preparación: encabezados en la fila 1.
+  blogSheetName: 'Blog',
   assetsHeader: 'Assets finales (Drive)',
   // Se usa sólo si no existe DRIVE_ASSETS_FOLDER_ID: se crea junto a la planilla.
   defaultAssetsFolderName: 'Assets finales',
@@ -55,7 +57,7 @@ function syncPlanner() {
   });
 
   const folders = ensureAssetFolders_(sheet, headerIndex, rawRows);
-  const report = { createdOrUpdated: 0, assets: 0, uploads: 0, skipped: 0, removed: 0, links: 0, errors: folders.errors.slice() };
+  const report = { createdOrUpdated: 0, assets: 0, uploads: 0, skipped: 0, removed: 0, links: 0, blog: 0, errors: folders.errors.slice() };
   const sourceKeys = [];
 
   rawRows.forEach((row, offset) => {
@@ -83,6 +85,13 @@ function syncPlanner() {
     report.errors.push(`Links de Instagram: ${error.message}`);
   }
 
+  // Notas del blog en preparación (pestaña “Blog”).
+  try {
+    report.blog = syncBlog_(api, spreadsheet);
+  } catch (error) {
+    report.errors.push(`Blog: ${error.message}`);
+  }
+
   // Quita del planificador las filas que ya no existen en la grilla.
   if (sourceKeys.length) {
     try {
@@ -99,6 +108,7 @@ function syncPlanner() {
     `Links de Instagram cargados: ${report.links}`,
     `Piezas quitadas del planificador: ${report.removed}`,
     `Filas sin pieza o tema: ${report.skipped}`,
+    `Notas del blog en preparación: ${report.blog === null ? 'sin pestaña “Blog”' : report.blog}`,
   ];
   if (report.errors.length) {
     message.push('', `Errores (${report.errors.length}):`, report.errors.slice(0, 8).join('\n'));
@@ -130,6 +140,47 @@ function writePublishedLinks_(api, spreadsheet, sheet, headerIndex) {
     written += 1;
   });
   return written;
+}
+
+/**
+ * Envía al planificador las notas del blog de la pestaña “Blog” (encabezados en
+ * la fila 1, una nota por fila con al menos “Nota”). Reemplaza la lista
+ * completa, así las filas borradas desaparecen. Las notas publicadas o
+ * programadas en el sitio no hace falta cargarlas: el planificador las lee del
+ * sitio y las cruza por “Slug”. Devuelve null si la pestaña no existe.
+ */
+function syncBlog_(api, spreadsheet) {
+  const sheet = spreadsheet.getSheetByName(PLANNER_CONFIG.blogSheetName);
+  if (!sheet) return null;
+  const lastRow = sheet.getLastRow();
+  const lastColumn = sheet.getLastColumn();
+  const notes = [];
+  if (lastRow > 1 && lastColumn) {
+    const values = sheet.getRange(1, 1, lastRow, lastColumn).getValues();
+    const headerIndex = indexHeaders_(values[0].map(String));
+    values.slice(1).forEach((row, offset) => {
+      const title = value_(row, headerIndex, 'Nota');
+      if (!title) return;
+      const rowNumber = offset + 2;
+      const target = value_(row, headerIndex, 'Fecha objetivo');
+      notes.push({
+        source_key: `${spreadsheet.getId()}:${sheet.getSheetId()}:${rowNumber}`,
+        title: title,
+        slug: value_(row, headerIndex, 'Slug'),
+        status: value_(row, headerIndex, 'Estado'),
+        target_date: target instanceof Date ? Utilities.formatDate(target, PLANNER_CONFIG.timeZone, 'yyyy-MM-dd') : target,
+        owner: value_(row, headerIndex, 'Responsable'),
+        axis: value_(row, headerIndex, 'Eje'),
+        sources: value_(row, headerIndex, 'Fuentes / input'),
+        dooh_input: value_(row, headerIndex, 'Aporte de DOOH'),
+        pieces: value_(row, headerIndex, 'Piezas de redes'),
+        draft_url: value_(row, headerIndex, 'Borrador'),
+        notes: value_(row, headerIndex, 'Observaciones'),
+        sort_order: rowNumber,
+      });
+    });
+  }
+  return apiRequest_(api, { op: 'sync_blog', notes: notes }).notes;
 }
 
 // Envía una fila al planificador y sube solo los archivos de Drive nuevos o modificados.

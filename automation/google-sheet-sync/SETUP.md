@@ -125,6 +125,28 @@ Las tandas que prepara el asistente ([`../grid/TANDA_SEMANAL.md`](../grid/TANDA_
 
 Si una carpeta se renombra o se borra el link de la columna, la siguiente ejecución reutiliza la carpeta que tenga exactamente el nombre `Pieza · Tema`, o crea una nueva si el tema cambió.
 
+### Notas del blog
+
+La pestaña **Blog** del planificador muestra en qué estado está cada nota y avisa lo que hay que resolver. Junta dos fuentes:
+
+- **Publicadas y programadas** salen del sitio ([`lib/blog-posts.ts`](../../lib/blog-posts.ts)): no se cargan a mano. Al compilar, el sitio genera `/planificador-redes/notas-blog.json` (protegido por Access) con todas las notas y el día en que se armó. Una nota con fecha posterior a ese día está programada y se publica sola a las 6:05 de su fecha ([`blog-programado.yml`](../../.github/workflows/blog-programado.yml)).
+- **En preparación** salen de la pestaña `Blog` de la grilla (encabezados en la fila 1), que se sincroniza junto con las piezas:
+
+| Columna | Contenido |
+| --- | --- |
+| `Nota` | Título de trabajo. Obligatoria: sin ella la fila se ignora. |
+| `Slug` | El de la URL (`/blog/slug`). Cuando la nota está cargada en el sitio, el planificador la toma de ahí y deja de mostrarla como en preparación. |
+| `Estado` | `Idea`, `Borrador`, `Revisar`, `Aprobado` o `Descartado`. “Programada” y “Publicada” no se escriben: las indica el sitio. |
+| `Fecha objetivo` | `AAAA-MM-DD`. |
+| `Responsable`, `Eje` | Opcionales. |
+| `Fuentes / input` | Inputs y fuentes de la nota. |
+| `Aporte de DOOH` | Experiencia, caso o criterio propio. Sin esto la nota no se publica. |
+| `Piezas de redes` | Códigos de la grilla que llevan a la nota, por ejemplo `17-IG, 17-LI`. |
+| `Borrador` | Link al documento. |
+| `Observaciones` | Libre. |
+
+Avisos del planificador: mes sin nota (el actual y el siguiente), fecha objetivo vencida, piezas de redes que salen antes que su nota, y notas programadas cuyo día ya pasó sin que el sitio se volviera a publicar.
+
 ## Probar en local
 
 `npm run dev` sirve la página, pero no las funciones. Para probar el planificador completo, compilar (`npm run build`) y usar `npx wrangler pages dev` con un `wrangler.toml` **fuera del repositorio** que declare `PLANNER_DB`, `PLANNER_BUCKET`, `PLANNER_SYNC_SECRET` y `PLANNER_DEV_EMAIL`. No agregar un `wrangler.toml` al repo: Cloudflare Pages lo tomaría como configuración y dejaría de usar la del panel. `PLANNER_DEV_EMAIL` simula la sesión de Access y nunca debe cargarse en producción.

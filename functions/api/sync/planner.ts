@@ -1,6 +1,7 @@
 import { error, json, sameSecret, type PlannerContext, type PlannerEnv } from "../../_shared/planner";
 import { loadInstagramPosts } from "../../_shared/instagram";
 import { matchPublishedPosts, type LinkCandidate } from "../../_shared/published-links";
+import { replaceBlogNotes, type BlogNoteInput } from "../../_shared/blog";
 
 // Sincronización desde Apps Script. Fuera de Cloudflare Access: se autentica
 // con la clave compartida PLANNER_SYNC_SECRET en el encabezado X-Planner-Secret.
@@ -149,7 +150,7 @@ async function instagramLinks(env: PlannerEnv) {
 export async function onRequestPost({ request, env }: PlannerContext) {
   if (!sameSecret(request.headers.get("X-Planner-Secret"), env.PLANNER_SYNC_SECRET)) return error("Clave de sincronización inválida.", 401);
 
-  let body: { op?: string; item?: ItemInput; item_id?: string; assets?: AssetInput[]; preview_key?: string | null; source_keys?: string[] };
+  let body: { op?: string; item?: ItemInput; item_id?: string; assets?: AssetInput[]; preview_key?: string | null; source_keys?: string[]; notes?: BlogNoteInput[] };
   try {
     body = await request.json();
   } catch {
@@ -167,6 +168,8 @@ export async function onRequestPost({ request, env }: PlannerContext) {
       return json({ ok: true, removed: await prune(env, body.source_keys) });
     }
     if (body.op === "instagram_links") return json({ ok: true, ...(await instagramLinks(env)) });
+    // Pestaña “Blog” de la grilla: reemplaza la lista de notas en preparación.
+    if (body.op === "sync_blog") return json({ ok: true, notes: await replaceBlogNotes(env.PLANNER_DB, body.notes ?? []) });
     return error("Operación desconocida.", 400);
   } catch (caught) {
     return error(caught instanceof Error ? caught.message : "Error de sincronización.", 400);
