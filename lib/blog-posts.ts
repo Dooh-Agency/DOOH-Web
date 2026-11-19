@@ -26,7 +26,7 @@ export const allBlogPosts: BlogPost[] = [
   {
     "title": "Tendencias de marca 2027: cuatro señales para leer antes de diseñar",
     "category": "Pensamiento",
-    "image": "/blog/nota-12.png",
+    "image": "/blog/nota-12-sistema.jpg",
     "blocks": [
       {
         "tag": "blockquote",
@@ -61,12 +61,6 @@ export const allBlogPosts: BlogPost[] = [
       {
         "tag": "h3",
         "text": "2. La marca es un sistema, no un logo"
-      },
-      {
-        "tag": "img",
-        "src": "/blog/nota-12-sistema.jpg",
-        "alt": "Cuatro cajas negras apiladas que, juntas, forman el isotipo de DOOH en lima.",
-        "caption": "Ilustración de DOOH: el isotipo de la marca aplicado a la señal. No es una campaña real."
       },
       {
         "tag": "p",
