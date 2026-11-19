@@ -1,7 +1,11 @@
-export type BlogBlock = {
-  tag: "p" | "h3" | "blockquote";
-  text: string;
-};
+export type BlogBlock =
+  | { tag: "p" | "h3" | "blockquote"; text: string }
+  // Imagen dentro del cuerpo de la nota: archivo en public/blog/, texto alternativo y epígrafe opcional.
+  | { tag: "img"; src: string; alt: string; caption?: string };
+
+// Primer párrafo o cita de la nota, para extractos y metadescripción.
+export const firstText = (blocks: BlogBlock[]) =>
+  blocks.find((block): block is Extract<BlogBlock, { text: string }> => block.tag === "p" || block.tag === "blockquote")?.text;
 
 export type BlogPost = {
   slug: string;
@@ -11,10 +15,118 @@ export type BlogPost = {
   category: string;
   image: string;
   blocks: BlogBlock[];
+  // Borrador: se ve con `npm run dev` para revisarlo, pero nunca se publica,
+  // aunque tenga fecha. Para publicarlo, quitar `draft` una vez aprobado.
+  draft?: boolean;
 };
 
 // Todas las notas, incluidas las programadas. Para el sitio usar `blogPosts`.
 export const allBlogPosts: BlogPost[] = [
+  // Programada: se publica sola el 9/12 (ver automation/editorial/2026-12-tendencias-de-marca-2027/).
+  {
+    "title": "Tendencias de marca 2027: cuatro señales para leer antes de diseñar",
+    "category": "Pensamiento",
+    "image": "/blog/nota-12.png",
+    "blocks": [
+      {
+        "tag": "blockquote",
+        "text": "Cada diciembre llegan los informes de tendencias. La pregunta útil no es cuáles seguir, sino cuáles tienen sentido para tu marca."
+      },
+      {
+        "tag": "p",
+        "text": "Noviembre trajo los primeros reportes sobre cómo se van a ver las marcas en 2027. The Dieline publicó su informe anual de tendencias de packaging y Envato, el suyo de diseño gráfico. Los leímos junto con los rebrandings que vimos este mes en Argentina y España, y encontramos cuatro señales que se repiten."
+      },
+      {
+        "tag": "p",
+        "text": "No son reglas. Son pistas sobre hacia dónde se mueve la mirada de la gente, y sirven para hacerle mejores preguntas a una marca antes de rediseñarla. Para mostrarlas, las aplicamos a nuestra propia marca."
+      },
+      {
+        "tag": "h3",
+        "text": "1. La imperfección deja de esconderse"
+      },
+      {
+        "tag": "img",
+        "src": "/blog/nota-12-imperfeccion.jpg",
+        "alt": "El isotipo de DOOH pintado a pincel en lima sobre un cartel negro, en un refugio de colectivo de Buenos Aires.",
+        "caption": "Ilustración de DOOH: el isotipo de la marca aplicado a la señal. No es una campaña real."
+      },
+      {
+        "tag": "p",
+        "text": "Envato define la imperfección como la gran tendencia de 2027: trazos de lápiz, papel rasgado, marcas del proceso que quedan a la vista y funcionan como firma de autoría. The Dieline va en la misma línea con los carteles pintados a mano y el regreso de lo lúdico en el packaging."
+      },
+      {
+        "tag": "p",
+        "text": "Leído desde la marca, no se trata de simular errores. Se trata de mostrar que hay personas detrás de lo que se hace. En un momento en que cualquiera puede generar una imagen pulida en segundos, la huella humana se vuelve un diferencial."
+      },
+      {
+        "tag": "h3",
+        "text": "2. La marca es un sistema, no un logo"
+      },
+      {
+        "tag": "img",
+        "src": "/blog/nota-12-sistema.jpg",
+        "alt": "Cuatro cajas negras apiladas que, juntas, forman el isotipo de DOOH en lima.",
+        "caption": "Ilustración de DOOH: el isotipo de la marca aplicado a la señal. No es una campaña real."
+      },
+      {
+        "tag": "p",
+        "text": "Los rebrandings de noviembre lo muestran con claridad. Paty, con GUT Design, reparte su logo entre los envases: cada pack lleva una parte y la marca se completa cuando se juntan en el freezer. Grupo ASV, con Small, une las letras de su logotipo con una línea continua que cambia de forma según el servicio. Grupo Social ONCE ordena bajo una misma marca paraguas a ONCE, Fundación ONCE e Ilunion."
+      },
+      {
+        "tag": "p",
+        "text": "Ninguno se resolvió solo con un logo. Son identidades pensadas para funcionar distinto en un pack, una submarca, una app o un video, sin dejar de ser reconocibles."
+      },
+      {
+        "tag": "h3",
+        "text": "3. Las letras cargan la identidad"
+      },
+      {
+        "tag": "img",
+        "src": "/blog/nota-12-letras.jpg",
+        "alt": "Afiche pegado en una pared de ladrillo con la palabra DOOH en letras grandes sobre un patrón de isotipos en lima.",
+        "caption": "Ilustración de DOOH: el isotipo de la marca aplicado a la señal. No es una campaña real."
+      },
+      {
+        "tag": "p",
+        "text": "The Dieline destaca los logotipos gruesos y con volumen, que ocupan el espacio con seguridad. Envato suma la tipografía dibujada a mano y los monogramas. En los dos casos, la tipografía deja de ser un acompañamiento y pasa a ser la marca."
+      },
+      {
+        "tag": "p",
+        "text": "Para una marca, esto tiene una consecuencia práctica: una tipografía con carácter se reconoce sola, incluso sin símbolo. Es una de las decisiones más rendidoras de una identidad, y una de las que menos se revisan."
+      },
+      {
+        "tag": "h3",
+        "text": "4. La IA como herramienta, no como estética"
+      },
+      {
+        "tag": "p",
+        "text": "Envato lo dice sin vueltas: en 2027 la IA funciona como una asistente sofisticada, no como la directora creativa. Coincide con lo que contamos en noviembre a partir del AI in Design Report 2026: los equipos usan cada vez más herramientas, pero el desafío no es sumarlas, sino ordenarlas con criterio."
+      },
+      {
+        "tag": "p",
+        "text": "En DOOH lo vivimos así: usamos IA para preparar borradores y acelerar partes del proceso, y armamos herramientas propias, como el planificador donde el equipo revisa y aprueba cada pieza. Lo que sale lo decide una persona."
+      },
+      {
+        "tag": "h3",
+        "text": "Qué hacer con estas señales"
+      },
+      {
+        "tag": "p",
+        "text": "Antes de sumar una tendencia a tu marca, conviene responder tres preguntas: qué dice de tu marca y a quién le habla, si funciona en todos los lugares donde la marca aparece o solo en una pieza, y si va a seguir teniendo sentido cuando la tendencia pase."
+      },
+      {
+        "tag": "p",
+        "text": "Las tendencias no se copian: se leen. Lo que queda es lo que una marca decide hacer con ellas."
+      },
+      {
+        "tag": "p",
+        "text": "Fuentes: The Dieline, The 2027 Dieline Trend Report (https://thedieline.com/dielines-2027-trend-report/); Envato, Graphic design trends 2027 (https://elements.envato.com/learn/graphic-design-trends); notas de prensa de Paty (El Cronista), Grupo Social ONCE (Periódico PublicidAD) y Grupo ASV (IPMARK)."
+      }
+    ],
+    "slug": "tendencias-de-marca-2027-cuatro-senales",
+    "legacyPath": "",
+    "publishedAt": "2026-12-09"
+  },
   {
     "title": "El stack de IA del diseño se duplicó. El criterio tiene que acompañar",
     "category": "Pensamiento",
@@ -1104,7 +1216,7 @@ export const todayInArgentina = (now = new Date()) =>
 // vuelve a publicar el día de la nota (ver .github/workflows/blog-programado.yml).
 // Con `npm run dev` se ven todas, para revisar las programadas antes de su fecha.
 export const blogPosts: BlogPost[] = process.env.NODE_ENV === "production"
-  ? allBlogPosts.filter((post) => post.publishedAt <= todayInArgentina())
+  ? allBlogPosts.filter((post) => !post.draft && post.publishedAt <= todayInArgentina())
   : allBlogPosts;
 
 export const getBlogPost = (slug: string) =>

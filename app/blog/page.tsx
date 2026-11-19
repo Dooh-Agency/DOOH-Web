@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
-import { blogPosts } from "@/lib/blog-posts";
+import { blogPosts, firstText } from "@/lib/blog-posts";
 
 export const metadata: Metadata = {
   title: "Blog | DOOH Agency",
@@ -69,7 +69,7 @@ export default function BlogPage() {
       <section className="px-8 py-16 md:px-14 md:py-24">
         <div className="mx-auto grid max-w-screen-xl gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
           {blogPosts.map((post) => {
-            const excerpt = post.blocks.find((block) => block.tag !== "h3")?.text ?? "";
+            const excerpt = firstText(post.blocks) ?? "";
 
             return (
               <article key={post.slug} className="group flex flex-col border-t border-dooh-dark/15 pt-5">

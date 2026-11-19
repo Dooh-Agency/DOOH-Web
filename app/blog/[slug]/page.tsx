@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Logo } from "@/components/Logo";
-import { blogPosts, getBlogPost } from "@/lib/blog-posts";
+import { blogPosts, firstText, getBlogPost } from "@/lib/blog-posts";
 
 type PageProps = { params: { slug: string } };
 
@@ -23,7 +23,7 @@ export function generateMetadata({ params }: PageProps): Metadata {
 
   if (!post) return {};
 
-  const description = post.blocks.find((block) => block.tag !== "h3")?.text;
+  const description = firstText(post.blocks);
   return {
     title: `${post.title} | DOOH Agency`,
     description,
@@ -85,6 +85,13 @@ export default function BlogPostPage({ params }: PageProps) {
         <div className="mx-auto max-w-3xl px-8 py-14 md:px-14 md:py-20">
           <div className="space-y-6 text-base font-light leading-relaxed text-dooh-dark/80 md:text-lg">
             {post.blocks.map((block, index) => {
+              if (block.tag === "img") return (
+                <figure key={index} className="!my-10 md:-mx-16">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={block.src} alt={block.alt} loading="lazy" className="w-full rounded-[20px]" />
+                  {block.caption && <figcaption className="mt-3 text-sm text-dooh-dark/55">{block.caption}</figcaption>}
+                </figure>
+              );
               if (block.tag === "h3") return <h2 key={index} className="pt-6 text-2xl font-bold leading-tight tracking-tightest text-dooh-dark md:text-3xl">{block.text}</h2>;
               if (block.tag === "blockquote") return <blockquote key={index} className="border-l-2 border-dooh-lime pl-5 text-xl font-normal italic leading-relaxed text-dooh-dark md:text-2xl">{block.text}</blockquote>;
               return <p key={index}>{block.text}</p>;
